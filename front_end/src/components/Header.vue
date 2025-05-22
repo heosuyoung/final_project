@@ -4,8 +4,10 @@
     @mouseout="handleMouseOut">
     <div class="header-inner">
       <div class="logo-area">
+        <a class="logo-link" @click.prevent="goHome" href="/">
         <img src="/dollar-logo.png" alt="Logo" class="logo-img" />
         <span class="logo-text">EA$E</span>
+        </a>
       </div>
       <nav class="nav">
         <ul>
@@ -16,8 +18,8 @@
         </ul>
       </nav>
       <div class="auth-buttons">
-        <button class="login">로그인</button>
-        <button class="signup">회원가입</button>
+        <button class="login" @click="goToLogin">로그인</button>
+        <button class="signup" @click="goToSignup">회원가입</button>
       </div>
     </div>
   </header>
@@ -25,9 +27,11 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 const isHeaderScrolled = ref(false);
 const isHeaderHovered = ref(false);
+const router = useRouter();
 
 const handleScroll = () => {
   isHeaderScrolled.value = window.scrollY > 50; // 50px 이상 스크롤 시 변경
@@ -39,6 +43,18 @@ const handleMouseOver = () => {
 
 const handleMouseOut = () => {
   isHeaderHovered.value = false;
+};
+
+const goToSignup = () => {
+  router.push('/signup');
+};
+
+const goHome = () => {
+  router.push('/')
+}
+
+const goToLogin = () => {
+  router.push('/login');
 };
 
 onMounted(() => {
@@ -82,7 +98,7 @@ onUnmounted(() => {
   justify-content: space-between;
   height: 100%;
   margin: 0;
-  padding: 0 48px;
+  padding: 0 192px;
   box-sizing: border-box;
   gap: 0;
 }
@@ -147,30 +163,48 @@ onUnmounted(() => {
 }
 
 .login, .signup {
-  border: 1.5px solid #111;
-  background: #fff;
-  color: #111;
+  border: none;
   padding: 0.8rem 2.2rem;
   border-radius: 24px;
   font-size: 1.15rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
-.signup {
-  background: #007bff;
-  border-color: #007bff;
-  color: #fff;
+.login {
+  background: #f8dede;
+  color: #222;
+  border: 1.5px solid #e7bcbc;
+  margin-right: 2px;
 }
 
 .login:hover {
-  background: #f5f5f5;
+  background: #f3e3e3;
+  color: #007bff;
+  box-shadow: 0 4px 16px #e7bcbc44;
+}
+
+.signup {
+  background: linear-gradient(90deg, #7ecbff 0%, #007bff 100%);
+  color: #fff;
+  margin-left: 2px;
+  box-shadow: 0 2px 12px #007bff22;
 }
 
 .signup:hover {
-  background: #0056b3;
-  border-color: #0056b3;
+  background: linear-gradient(90deg, #4fa3e3 0%, #0056b3 100%);
+  color: #fff;
+  box-shadow: 0 4px 24px #007bff33;
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 @media (max-width: 1400px) {
