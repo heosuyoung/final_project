@@ -39,13 +39,13 @@ export default {
 
 <style scoped>
 .content-section {
-  padding: 5rem 0;
+  padding: 3rem 0;
   text-align: center;
   width: 100vw; /* 브라우저 너비 전체를 사용 */
   margin-left: calc(-50vw + 50%); /* 왼쪽 여백을 없애고 전체 너비로 확장 */
   position: relative; /* 위치 기준점 */
-  margin-top: 3rem; /* 위쪽 추가 여백 */
-  margin-bottom: 3rem; /* 아래쪽 추가 여백 */
+  margin-top: 2rem; /* 위쪽 추가 여백 */
+  margin-bottom: 2rem; /* 아래쪽 추가 여백 */
 }
 
 .alt-bg {
@@ -59,15 +59,15 @@ export default {
 }
 
 h2 {
-  font-size: 2.3rem;
+  font-size: 2rem;
   color: #333;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1rem;
 }
 
 p {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: #666;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   margin-left: auto;
   margin-right: auto;
 }
@@ -75,14 +75,14 @@ p {
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 8rem;
-  margin: 0 auto 3rem auto;
+  gap: 2rem;
+  margin: 0 auto 2rem auto;
 }
 
 .feature-item {
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 2.5rem 2rem;
+  padding: 1.5rem 1.5rem;
   box-shadow: 0 4px 16px rgba(0,0,0,0.07);
 }
 

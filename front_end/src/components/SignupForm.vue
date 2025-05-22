@@ -34,8 +34,12 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { signup } from '../services/auth.js'
 
+const router = useRouter()
+const isLoading = ref(false)
 const form = reactive({
   username: '',
   password: '',
@@ -47,9 +51,37 @@ const form = reactive({
   terms: false,
 })
 
-const onSubmit = () => {
-  // TODO: 실제 회원가입 API 연동
-  alert('회원가입 완료!')
+const onSubmit = async () => {
+  // 유효성 검사
+  if (form.username.length < 4) {
+    alert('아이디는 최소 4자 이상이어야 합니다.')
+    return
+  }
+  
+  if (form.password.length < 6) {
+    alert('비밀번호는 최소 6자 이상이어야 합니다.')
+    return
+  }
+  
+  if (form.birth.length !== 8 || isNaN(form.birth)) {
+    alert('생년월일은 8자리 숫자(YYYYMMDD)로 입력해주세요.')
+    return
+  }
+  
+  isLoading.value = true
+  
+  try {
+    // auth 서비스를 통한 회원가입 API 호출
+    await signup(form)
+    
+    alert('회원가입 완료! 로그인 페이지로 이동합니다.')
+    router.push('/login')
+  } catch (error) {
+    console.error('회원가입 처리 중 오류 발생:', error)
+    alert(error.message || '회원가입 처리 중 오류가 발생했습니다.')
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -64,21 +96,21 @@ const onSubmit = () => {
 
 .signup-container {
   width: 100%;
-  max-width: none; /* ← 제한 없앰 */
+  max-width: 600px; /* 최대 너비 제한 */
   margin: 0 auto;
   background: #fff;
-  border-radius: 32px;
+  border-radius: 24px;
   box-shadow: 0 8px 40px #007bff11, 0 2px 16px #0002;
-  padding: 5rem 8rem; /* ← 좌우 여유 줌 */
+  padding: 3rem 4rem; /* 패딩 축소 */
   box-sizing: border-box;
 }
 
 .signup-logo {
-  font-size: 2.7rem;
+  font-size: 2.2rem;
   font-weight: 900;
   color: #007bff;
-  letter-spacing: 2.5px;
-  margin-bottom: 2.5rem;
+  letter-spacing: 2px;
+  margin-bottom: 2rem;
   text-align: center;
 }
 
@@ -86,7 +118,7 @@ const onSubmit = () => {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.7rem;
+  gap: 1.2rem;
   align-items: stretch; /* 핵심: 내부 요소 가득 차게 */
 }
 
@@ -96,8 +128,8 @@ const onSubmit = () => {
   width: 100%;
   max-width: 100%;
   min-width: 100%;
-  font-size: 1.25rem;
-  padding: 1.3rem 1.7rem;
+  font-size: 1rem;
+  padding: 0.9rem 1.2rem;
   border: 1.5px solid #e0e0e0;
   border-radius: 12px;
   background: #fafbfc;
@@ -114,19 +146,19 @@ const onSubmit = () => {
 
 .nationality-group {
   display: flex;
-  gap: 3.5rem;
+  gap: 2rem;
   justify-content: center;
-  margin: 0.7rem 0 0.3rem 0;
+  margin: 0.5rem 0 0.2rem 0;
 }
 
 .nationality-group label {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   color: #333;
 }
 
 .terms-group {
-  margin: 0.7rem 0 0.3rem 0;
-  font-size: 1.1rem;
+  margin: 0.5rem 0 0.2rem 0;
+  font-size: 0.95rem;
   color: #007bff;
   display: flex;
   align-items: center;
@@ -135,12 +167,12 @@ const onSubmit = () => {
 .signup-btn {
   background: linear-gradient(90deg, #7ecbff 0%, #007bff 100%);
   color: #fff;
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 700;
   border: none;
-  border-radius: 12px;
-  padding: 1.3rem 0;
-  margin-top: 1.1rem;
+  border-radius: 10px;
+  padding: 1rem 0;
+  margin-top: 0.8rem;
   cursor: pointer;
   box-shadow: 0 4px 18px #007bff22;
   transition: background 0.2s;
@@ -152,27 +184,27 @@ const onSubmit = () => {
 
 @media (max-width: 1000px) {
   .signup-container {
-    max-width: 98vw;
-    padding: 2rem 0.5rem;
+    max-width: 90vw;
+    padding: 1.5rem 1rem;
     border-radius: 16px;
   }
 
   .signup-logo {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
   }
 
   .signup-form input,
   .signup-form select {
-    font-size: 1rem;
-    padding: 0.8rem 0.7rem;
-    border-radius: 7px;
+    font-size: 0.9rem;
+    padding: 0.7rem 0.6rem;
+    border-radius: 6px;
   }
 
   .signup-btn {
-    font-size: 1.1rem;
-    padding: 0.9rem 0;
-    border-radius: 7px;
+    font-size: 1rem;
+    padding: 0.8rem 0;
+    border-radius: 6px;
   }
 }
 
@@ -180,4 +212,4 @@ const onSubmit = () => {
 
 :global(body), :global(html) {
   background: #fff !important;
-} 
+}

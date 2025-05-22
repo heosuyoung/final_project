@@ -41,7 +41,7 @@ export default {
 
 <style scoped>
 .content-section {
-  padding: 5rem 0;
+  padding: 3rem 0;
   background-color: #f8f9fa;
   text-align: center;
   width: 100vw; /* 브라우저 너비 전체를 사용 */
@@ -56,15 +56,15 @@ export default {
 }
 
 h2 {
-  font-size: 2.3rem;
+  font-size: 2rem;
   color: #333;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1rem;
 }
 
 p {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: #666;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   margin-left: auto;
   margin-right: auto;
 }
@@ -72,7 +72,7 @@ p {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 15rem;
+  gap: 2rem;
   margin: 0 auto;
 }
 
@@ -82,20 +82,20 @@ p {
   box-shadow: 0 4px 16px rgba(0,0,0,0.10);
   text-align: left;
   overflow: hidden;
-  padding: 2.5rem 2rem;
+  padding: 1.5rem 1rem;
 }
 
 .card-header {
   background-color: #007bff;
   color: white;
-  padding: 1.3rem 1.5rem;
-  font-size: 1.3rem;
+  padding: 1rem 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
 .card-body {
-  padding: 1.5rem 0 0 0;
-  font-size: 1.1rem;
+  padding: 1.2rem 0 0 0;
+  font-size: 1rem;
   color: #444;
 }
 

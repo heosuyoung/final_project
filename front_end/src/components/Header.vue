@@ -16,22 +16,33 @@
           <li><a href="#">현물가격변동(환율)</a></li>
           <li><a href="#">주변은행검색</a></li>
         </ul>
-      </nav>
-      <div class="auth-buttons">
-        <button class="login" @click="goToLogin">로그인</button>
-        <button class="signup" @click="goToSignup">회원가입</button>
+      </nav>      <div class="auth-buttons">
+        <template v-if="isLoggedIn">
+          <button class="profile" @click="goToProfile">내 프로필</button>
+          <button class="logout" @click="logout">로그아웃</button>
+        </template>
+        <template v-else>
+          <button class="login" @click="goToLogin">로그인</button>
+          <button class="signup" @click="goToSignup">회원가입</button>
+        </template>
       </div>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { isAuthenticated, logout as authLogout } from '../services/auth.js';
 
 const isHeaderScrolled = ref(false);
 const isHeaderHovered = ref(false);
 const router = useRouter();
+
+// 로그인 상태 확인
+const isLoggedIn = computed(() => {
+  return isAuthenticated();
+});
 
 const handleScroll = () => {
   isHeaderScrolled.value = window.scrollY > 50; // 50px 이상 스크롤 시 변경
@@ -55,6 +66,22 @@ const goHome = () => {
 
 const goToLogin = () => {
   router.push('/login');
+};
+
+const goToProfile = () => {
+  router.push('/profile');
+};
+
+const logout = () => {
+  // auth 서비스를 통한 로그아웃 처리
+  // 이미 import된 함수 사용
+  authLogout();
+  
+  // 홈 페이지로 리다이렉트
+  router.push('/');
+  
+  // 페이지 새로고침으로 상태 완전히 갱신
+  window.location.reload();
 };
 
 onMounted(() => {
@@ -90,15 +117,14 @@ onUnmounted(() => {
 }
 
 .header-inner {
-  width: 100vw;
-  min-width: 1200px;
+  width: 100%;
   max-width: 100vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 100%;
   margin: 0;
-  padding: 0 192px;
+  padding: 0 5%;
   box-sizing: border-box;
   gap: 0;
 }
@@ -199,6 +225,32 @@ onUnmounted(() => {
   box-shadow: 0 4px 24px #007bff33;
 }
 
+.profile {
+  background: #e3f2fd;
+  color: #0056b3;
+  border: 1.5px solid #0056b3;
+  margin-right: 2px;
+}
+
+.profile:hover {
+  background: #bbdefb;
+  color: #004080;
+  box-shadow: 0 4px 16px #007bff22;
+}
+
+.logout {
+  background: #f5f5f5;
+  color: #555;
+  border: 1.5px solid #ddd;
+  margin-left: 2px;
+}
+
+.logout:hover {
+  background: #eeeeee;
+  color: #e57373;
+  border-color: #e57373;
+}
+
 .logo-link {
   display: flex;
   align-items: center;
@@ -209,14 +261,39 @@ onUnmounted(() => {
 
 @media (max-width: 1400px) {
   .header-inner {
-    min-width: 0;
     padding: 0 16px;
   }
   .nav ul {
-    gap: 32px;
+    gap: 20px;
   }
   .login, .signup {
-    padding: 0.8rem 1.2rem;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .header {
+    height: auto;
+    padding: 10px 0;
+  }
+  .header-inner {
+    flex-direction: column;
+    padding: 10px;
+  }
+  .nav {
+    margin: 10px 0;
+  }
+  .nav ul {
+    gap: 15px;
+    padding: 0;
+  }
+  .auth-buttons {
+    margin-top: 10px;
+  }
+  .login, .signup {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
   }
 }
 </style> 

@@ -1,9 +1,61 @@
-# 📝 05-pjt: Django 회원 + 게시판 + 소셜 로그인
+# 📝 EA$E 금융 웹 애플리케이션 - 백엔드
 
 ## 📌 프로젝트 개요
 - Django를 활용한 회원 관리 및 게시판 기능 구현
 - 로그인, 회원가입, 프로필, 팔로우, 댓글 기능 구현
-- Google 소셜 로그인(OAuth 2.0) 도전 과제 완료
+- Google 소셜 로그인(OAuth 2.0) 구현
+- RESTful API 제공으로 프론트엔드 연동
+
+---
+
+## 🔧 설치 및 설정
+
+### 필요 조건
+- Python 3.8 이상
+- pip 21 이상
+
+### 환경 설정
+1. 프로젝트 클론하기
+```bash
+git clone <repository-url>
+cd final_project/back_end/05_social_projcet
+```
+
+2. 가상 환경 생성 및 활성화
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# macOS/Linux
+python -m venv venv
+source venv/bin/activate
+```
+
+3. 의존성 설치
+```bash
+pip install -r requirements.txt
+```
+
+4. 환경 변수 설정
+`.env.example` 파일을 `.env`로 복사하고 필요한 설정을 입력하세요:
+```bash
+# Windows
+copy .env.example .env
+
+# macOS/Linux
+cp .env.example .env
+```
+
+5. 데이터베이스 마이그레이션
+```bash
+python manage.py migrate
+```
+
+6. 서버 실행
+```bash
+python manage.py runserver
+```
 
 ---
 

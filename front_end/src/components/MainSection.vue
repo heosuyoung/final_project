@@ -25,13 +25,13 @@ export default {
 
 <style scoped>
 .main-section {
-  min-height: 60vh;
+  min-height: 50vh;
   background: #f3e3e3;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 5rem 0 3rem 0;
+  padding: 3rem 0 2rem 0;
   width: 100vw;
   margin-left: calc(-50vw + 50%);
   position: relative;
@@ -41,10 +41,10 @@ export default {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
-  max-width: 2200px;
-  gap: 16rem;
+  max-width: 1200px;
+  gap: 4rem;
   margin: 0 auto;
 }
 
@@ -52,9 +52,10 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: center;
   height: 100%;
+  padding-right: 2rem;
 }
 
 .main-text-group {
@@ -67,7 +68,7 @@ export default {
 }
 
 .main-line1, .main-line2 {
-  font-size: 5rem;
+  font-size: 3.5rem;
   font-weight: 700;
   color: #222;
   letter-spacing: -1px;
@@ -77,7 +78,7 @@ export default {
 
 .main-ease {
   color: #007bff;
-  font-size: 5.5rem;
+  font-size: 4rem;
   font-weight: 900;
   letter-spacing: 0.1em;
   margin: 0.1em 0 0.1em 0;
@@ -89,15 +90,16 @@ export default {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   height: 100%;
+  padding-left: 2rem;
 }
 
 .main-img-bg {
   background: #f3e3e3;
   border-radius: 2.5rem;
-  width: 800px;
-  height: 800px;
+  width: 400px;
+  height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,13 +112,35 @@ export default {
   object-fit: contain;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .main-row {
     gap: 2rem;
   }
   .main-img-bg {
-    width: 220px;
-    height: 220px;
+    width: 400px;
+    height: 400px;
+  }
+  .main-line1, .main-line2 {
+    font-size: 3rem;
+  }
+  .main-ease {
+    font-size: 3.5rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .main-row {
+    gap: 1.5rem;
+  }
+  .main-img-bg {
+    width: 300px;
+    height: 300px;
+  }
+  .main-line1, .main-line2 {
+    font-size: 2.5rem;
+  }
+  .main-ease {
+    font-size: 3rem;
   }
 }
 
@@ -124,26 +148,40 @@ export default {
   .main-row {
     flex-direction: column;
     gap: 2rem;
-  }
-  .main-left, .main-right {
+  }  .main-left, .main-right {
     width: 100%;
     justify-content: center;
     align-items: center;
+    padding-left: 0;
+    padding-right: 0;
   }
   .main-text-group {
     align-items: center;
   }
   .main-line1, .main-line2 {
-    font-size: 1.3rem;
+    font-size: 2rem;
     text-align: center;
   }
   .main-ease {
-    font-size: 1.5rem;
+    font-size: 2.5rem;
     text-align: center;
   }
   .main-img-bg {
-    width: 120px;
-    height: 120px;
+    width: 200px;
+    height: 200px;
+  }
+}
+
+@media (max-width: 600px) {
+  .main-line1, .main-line2 {
+    font-size: 1.5rem;
+  }
+  .main-ease {
+    font-size: 2rem;
+  }
+  .main-img-bg {
+    width: 150px;
+    height: 150px;
   }
 }
 </style> 
