@@ -14,9 +14,10 @@
           <li><a href="#">상품추천</a></li>
           <li><a href="#">관심종목정보 검색</a></li>
           <li><a href="#">현물가격변동(환율)</a></li>
-          <li><a href="#">주변은행검색</a></li>
+          <li><a href="#" @click.prevent="goToMap">주변은행검색</a></li>
         </ul>
-      </nav>      <div class="auth-buttons">
+      </nav>
+      <div class="auth-buttons">
         <template v-if="isLoggedIn">
           <button class="profile" @click="goToProfile">내 프로필</button>
           <button class="logout" @click="logout">로그아웃</button>
@@ -61,8 +62,8 @@ const goToSignup = () => {
 };
 
 const goHome = () => {
-  router.push('/')
-}
+  router.push('/');
+};
 
 const goToLogin = () => {
   router.push('/login');
@@ -73,15 +74,14 @@ const goToProfile = () => {
 };
 
 const logout = () => {
-  // auth 서비스를 통한 로그아웃 처리
-  // 이미 import된 함수 사용
   authLogout();
-  
-  // 홈 페이지로 리다이렉트
   router.push('/');
-  
-  // 페이지 새로고침으로 상태 완전히 갱신
   window.location.reload();
+};
+
+// ✅ 추가된 함수: 주변은행검색으로 이동
+const goToMap = () => {
+  router.push('/map');
 };
 
 onMounted(() => {
@@ -99,7 +99,7 @@ onUnmounted(() => {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: 10;
   background: #f3e3e3;
   border-bottom: none;
   transition: background 0.3s, border-bottom 0.3s;
@@ -296,4 +296,4 @@ onUnmounted(() => {
     font-size: 0.9rem;
   }
 }
-</style> 
+</style>
