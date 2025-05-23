@@ -33,12 +33,9 @@
     </div>
 
     <!-- 지도: 나머지 전체 채움 -->
-    <div id="map" style="flex-grow: 1;"></div>
+    <div id="map" style="flex-grow: 1; min-height: 400px; height: 100%;"></div>
   </div>
 </template>
-
-
-
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -71,10 +68,26 @@ const loadKakaoMap = () => {
     }
 
     console.log('Kakao Maps API 로드 시작')
-    const apiKey = import.meta.env.VITE_KAKAO_API_KEY // .env 파일에서 환경변수로 가져오기
-    console.log('API Key:', apiKey ? '키가 로드됨' : '키가 로드되지 않음')
+    // .env 파일에서 API 키 가져오기
+    const apiKey = import.meta.env.VITE_KAKAO_API_KEY 
+    
+    // API 키 유효성 검증
+    if (!apiKey) {
+      console.error('API 키가 로드되지 않았습니다. .env 파일을 확인해주세요.')
+      alert('.env 파일의 VITE_KAKAO_API_KEY가 설정되지 않았습니다.')
+      reject(new Error('API 키가 없음'))
+      return
+    }
+    
+    // 이미 존재하는 스크립트 제거 (중복 로딩 방지)
+    const existingScript = document.querySelector('script[src*="dapi.kakao.com"]')
+    if (existingScript) {
+      document.head.removeChild(existingScript)
+    }
+    
     const script = document.createElement('script')
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services,clusterer,drawing`
+    script.async = true // 비동기 로드
     
     script.onload = () => {
       console.log('Kakao Maps 스크립트 로드 완료, Maps API 초기화 시작')
@@ -86,6 +99,8 @@ const loadKakaoMap = () => {
     
     script.onerror = (e) => {
       console.error('Kakao Maps 스크립트 로드 실패', e)
+      console.error('카카오 개발자 사이트에서 http://localhost:5173 도메인이 등록되어 있는지 확인하세요.')
+      alert('카카오 지도를 불러오는데 실패했습니다. 개발자 도구에서 자세한 오류를 확인해주세요.')
       reject(e)
     }
     
@@ -245,8 +260,10 @@ const handleConfirmMessage = () => {
 // 지도 초기화
 onMounted(async () => {
   try {
-    await loadKakaoMap()
+    console.log('MapPage 마운트됨, 카카오맵 로드 시작')
     
+    // 카카오맵 API 로드
+    await loadKakaoMap()
     console.log('카카오맵 API가 로드되었습니다.')
     
     const container = document.getElementById('map')
@@ -261,17 +278,31 @@ onMounted(async () => {
       level: 3  // 확대 레벨
     }
     
-    console.log('지도 초기화 시작')
-    mapInstance = new kakao.maps.Map(container, options)
-    console.log('지도 초기화 완료')
+    try {
+      console.log('지도 초기화 시작')
+      mapInstance = new kakao.maps.Map(container, options)
+      console.log('지도 초기화 완료')
+      console.log('지도 객체:', mapInstance ? '생성됨' : '생성 실패')
+      
+      // 지도 로드 확인
+      if (mapInstance) {
+        // 지도 객체에 이벤트 리스너 추가
+        kakao.maps.event.addListener(mapInstance, 'tilesloaded', function() {
+          console.log('지도 타일 로딩 완료!')
+        })
+      }
+    } catch (mapError) {
+      console.error('지도 객체 생성 실패:', mapError)
+      alert('지도 객체 생성 실패. 새로고침 후 다시 시도해보세요.')
+    }
     
-    // 알림창이 나타나는 경우 확인용 이벤트 리스너
-    window.addEventListener('error', function(e) {
-      console.error('전역 에러 발생:', e.message)
-    })
+    // 초기 데이터 확인용 로그
+    console.log('지도 정보:', mapInfo.length, '개 지역')
+    console.log('은행 정보:', bankInfo.length, '개 은행')
     
   } catch (e) {
     console.error('카카오맵 로딩 실패:', e)
+    alert('카카오맵 로딩에 실패했습니다. 개발자 도구의 콘솔에서 자세한 오류를 확인하세요.')
   }
 })
 </script>

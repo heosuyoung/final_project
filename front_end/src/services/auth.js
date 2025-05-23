@@ -58,13 +58,13 @@ export const signup = async (userData) => {
  */
 export const login = async (username, password) => {
   try {
-    // 현재 상태에서 백엔드 서버 연결 여부 확인
+    // 현재 상태에서 백엔드 서버 연결 여부 확인 - 짧은 타임아웃으로 설정
     let isBackendConnected = false;
     
     try {
-      // 백엔드 연결 상태 확인 (5초 타임아웃)
+      // 백엔드 연결 상태 확인 (타임아웃 단축: 500ms)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 500);
       
       const checkResponse = await fetch(`${API_URL}/accounts/login/`, {
         method: 'HEAD',

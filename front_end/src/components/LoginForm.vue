@@ -28,29 +28,48 @@ const handleLogin = async () => {
 
   isLoading.value = true
   try {
-    // auth 서비스를 통한 로그인 처리
-    const result = await login(username.value, password.value)
-    console.log('로그인 성공 결과:', result)
+    // 로그인 처리 전 사용자 입력 확인 - 로컬 스토리지에서 사용자 확인
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
+    const foundUser = registeredUsers.find(u => u.username === username.value)
     
+    if (!foundUser) {
+      throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.')
+    }
+    
+    if (foundUser.password !== password.value) {
+      throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.')
+    }
+    
+    // 로그인 성공 메시지 즉시 표시 후 비동기 처리 진행
     alert('로그인 성공!')
     
     // URL에서 redirect 쿼리 파라미터 확인
     const redirect = router.currentRoute.value.query.redirect
-    console.log('리다이렉션 경로:', redirect || '홈페이지')
+    
+    // 실제 로그인 처리 (토큰 저장 등) - 백그라운드에서 진행
+    const result = await login(username.value, password.value)
+    console.log('로그인 성공 결과:', result)
     
     // 로컬 스토리지 확인
     console.log('인증 토큰 존재:', !!localStorage.getItem('token'))
     console.log('사용자 데이터 존재:', !!localStorage.getItem('user'))
     
-    // 프로필 페이지 이동 시 페이지 새로고침 처리
+    // 이미 로그인 성공 알림을 표시했으므로 이동만 처리
     if (redirect === '/profile') {
+      // 프로필 페이지로 직접 이동 (새로고침으로 처리)
       window.location.href = redirect
+    } else if (redirect) {
+      // 리다이렉트 경로로 이동 후 새로고침
+      router.push(redirect)
+      setTimeout(() => window.location.reload(), 100)
     } else {
-      // 리다이렉트 경로가 있으면 해당 경로로, 없으면 홈으로 이동
-      router.push(redirect || '/')
+      // 홈으로 이동 후 새로고침
+      router.push('/')
+      setTimeout(() => window.location.reload(), 100)
     }
   } catch (e) {
     console.error('로그인 오류:', e)
+    // 오류 발생 시 즉시 피드백 제공
     alert(e.message || '로그인 실패')
   } finally {
     isLoading.value = false

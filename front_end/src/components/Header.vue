@@ -11,9 +11,9 @@
       </div>
       <nav class="nav">
         <ul>
-          <li><a href="#">상품추천</a></li>
-          <li><a href="#">관심종목정보 검색</a></li>
-          <li><a href="#">현물가격변동(환율)</a></li>
+          <li><a href="#">예적금 추천</a></li>
+          <li><a href="#">주식 검색</a></li>
+          <li><a href="#" @click.prevent="goToCommodities">현물가격변동(환율)</a></li>
           <li><a href="#" @click.prevent="goToMap">주변은행검색</a></li>
         </ul>
       </nav>
@@ -32,17 +32,26 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { isAuthenticated, logout as authLogout } from '../services/auth.js';
 
 const isHeaderScrolled = ref(false);
 const isHeaderHovered = ref(false);
 const router = useRouter();
+const route = useRoute();
 
-// 로그인 상태 확인
+// 로그인 상태를 ref로 관리
+const authState = ref(isAuthenticated());
+
+// 로그인 상태 확인 (computed로 참조)
 const isLoggedIn = computed(() => {
-  return isAuthenticated();
+  return authState.value;
+});
+
+// 라우트 변경 시 인증 상태 다시 확인 (중요: 로그인/로그아웃 후 상태 업데이트)
+watch(() => route.path, () => {
+  authState.value = isAuthenticated();
 });
 
 const handleScroll = () => {
@@ -75,13 +84,18 @@ const goToProfile = () => {
 
 const logout = () => {
   authLogout();
+  authState.value = false; // 즉시 상태 업데이트
   router.push('/');
-  window.location.reload();
 };
 
 // ✅ 추가된 함수: 주변은행검색으로 이동
 const goToMap = () => {
   router.push('/map');
+};
+
+// ✅ 추가된 함수: 현물가격변동(환율) 페이지로 이동
+const goToCommodities = () => {
+  router.push('/commodities');
 };
 
 onMounted(() => {
