@@ -25,6 +25,11 @@
               style="width: 100%; padding: 10px; background-color: orange; color: white; border: none; font-weight: bold;">
         찾기
       </button>
+      
+      <!-- 로컬 알림창 확인 버튼 -->
+      <button @click="handleConfirmMessage" class="confirm-button" style="display: none;">
+        확인
+      </button>
     </div>
 
     <!-- 지도: 나머지 전체 채움 -->
@@ -60,24 +65,66 @@ const updateSiGunGuList = () => {
 const loadKakaoMap = () => {
   return new Promise((resolve, reject) => {
     if (window.kakao && window.kakao.maps) {
+      console.log('Kakao Maps API가 이미 로드되어 있습니다.')
       resolve()
       return
     }
 
+    console.log('Kakao Maps API 로드 시작')
+    const apiKey = import.meta.env.VITE_KAKAO_API_KEY // .env 파일에서 환경변수로 가져오기
+    console.log('API Key:', apiKey ? '키가 로드됨' : '키가 로드되지 않음')
     const script = document.createElement('script')
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_API_KEY}&autoload=false&libraries=services`
-    script.onload = () => window.kakao.maps.load(resolve)
-    script.onerror = reject
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services,clusterer,drawing`
+    
+    script.onload = () => {
+      console.log('Kakao Maps 스크립트 로드 완료, Maps API 초기화 시작')
+      window.kakao.maps.load(() => {
+        console.log('Kakao Maps API 초기화 완료')
+        resolve()
+      })
+    }
+    
+    script.onerror = (e) => {
+      console.error('Kakao Maps 스크립트 로드 실패', e)
+      reject(e)
+    }
+    
     document.head.appendChild(script)
+    console.log('Kakao Maps 스크립트 태그 추가됨')
+    
+    // localhost 알림창 대응
+    window.addEventListener('message', function(event) {
+      if (event.data && typeof event.data === 'string' && event.data.includes('지역의 은행')) {
+        console.log('알림 메시지 감지:', event.data)
+        // 확인 버튼을 자동으로 클릭하는 로직
+        const confirmButton = document.querySelector('.confirm-button')
+        if (confirmButton) {
+          confirmButton.click()
+        }
+      }
+    })
   })
 }
 
 // ✅ 검색 함수 (alert + console 확인)
 const searchBanks = () => {
-  alert('searchBanks 실행됨') // 클릭 작동 확인용
+  console.log('searchBanks 실행됨') // 클릭 작동 확인용
 
   if (!window.kakao || !window.kakao.maps) {
     console.error('카카오맵이 아직 로드되지 않았습니다.')
+    return
+  }
+
+  // 선택 값 확인
+  console.log('[선택된 값들]', {
+    do: selectedDo.value,
+    sigungu: selectedSigungu.value,
+    bank: selectedBank.value
+  })
+
+  // 모든 값이 선택되었는지 확인
+  if (!selectedDo.value || !selectedSigungu.value || !selectedBank.value) {
+    alert('모든 항목(광역시/도, 시/군/구, 은행)을 선택해주세요.')
     return
   }
 
@@ -86,48 +133,143 @@ const searchBanks = () => {
 
   console.log('[검색 쿼리]', query)
 
-  geocoder.addressSearch(query, function (result, status) {
-    console.log('[검색 결과]', result)
-    console.log('[상태]', status)
+  // 키워드 검색 서비스 사용
+  const places = new kakao.maps.services.Places()
+  
+  // 마커와 인포윈도우를 저장할 배열
+  let markers = [];
+  let infowindows = [];
+  
+  // 모든 기존 마커와 인포윈도우 제거 함수
+  const clearMarkers = () => {
+    markers.forEach(marker => marker.setMap(null));
+    infowindows.forEach(infowindow => infowindow.close());
+    markers = [];
+    infowindows = [];
+  };
 
+  // 키워드로 장소 검색
+  places.keywordSearch(query, function(result, status) {
+    console.log('[키워드 검색 결과]', result)
+    console.log('[키워드 검색 상태]', status)
+    
     if (status === kakao.maps.services.Status.OK) {
-      const coords = new kakao.maps.LatLng(result[0].y, result[0].x)
-
-      if (!mapInstance) {
-        mapInstance = new kakao.maps.Map(document.getElementById('map'), {
-          center: coords,
-          level: 3
-        })
-      } else {
-        mapInstance.setCenter(coords)
-      }
-
-      const marker = new kakao.maps.Marker({
-        map: mapInstance,
-        position: coords
-      })
-
-      const infowindow = new kakao.maps.InfoWindow({
-        content: `<div style="padding:5px;">${selectedBank.value}</div>`
-      })
-
-      infowindow.open(mapInstance, marker)
+      // 기존 마커들 제거
+      clearMarkers();
+      
+      // 첫번째 결과의 위치로 맵 이동 (확대 레벨 조정)
+      const firstCoords = new kakao.maps.LatLng(result[0].y, result[0].x);
+      mapInstance.setCenter(firstCoords);
+      mapInstance.setLevel(4); // 적절한 확대 레벨로 설정
+      
+      // 검색된 모든 은행에 마커 표시
+      result.forEach((place, index) => {
+        const coords = new kakao.maps.LatLng(place.y, place.x);
+        
+        // 마커 생성
+        const marker = new kakao.maps.Marker({
+          map: mapInstance,
+          position: coords
+        });
+        markers.push(marker);
+        
+        // 인포윈도우 생성
+        const infoContent = `
+          <div style="padding:5px; width:150px; text-align:center;">
+            <strong>${place.place_name}</strong><br>
+            <span style="font-size:12px; color:#888;">${place.address_name}</span>
+          </div>
+        `;
+        
+        const infowindow = new kakao.maps.InfoWindow({
+          content: infoContent
+        });
+        infowindows.push(infowindow);
+        
+        // 마커 클릭시 인포윈도우 표시
+        kakao.maps.event.addListener(marker, 'click', function() {
+          // 다른 인포윈도우 닫기
+          infowindows.forEach(iw => iw.close());
+          // 현재 인포윈도우 열기
+          infowindow.open(mapInstance, marker);
+        });
+        
+        // 첫번째 마커는 기본적으로 인포윈도우 열기
+        if (index === 0) {
+          infowindow.open(mapInstance, marker);
+        }
+      });
+      
     } else {
-      alert('해당 지역의 은행 정보를 찾을 수 없습니다.')
+      // Geocoder로 주소 검색 시도 (대안으로)
+      geocoder.addressSearch(query, function (result, status) {
+        console.log('[주소 검색 결과]', result)
+        console.log('[주소 검색 상태]', status)
+
+        if (status === kakao.maps.services.Status.OK) {
+          const coords = new kakao.maps.LatLng(result[0].y, result[0].x)
+
+          if (!mapInstance) {
+            mapInstance = new kakao.maps.Map(document.getElementById('map'), {
+              center: coords,
+              level: 3
+            })
+          } else {
+            mapInstance.setCenter(coords)
+          }
+
+          const marker = new kakao.maps.Marker({
+            map: mapInstance,
+            position: coords
+          })
+
+          const infowindow = new kakao.maps.InfoWindow({
+            content: `<div style="padding:5px;">${selectedBank.value}</div>`
+          })
+
+          infowindow.open(mapInstance, marker)
+        } else {
+          alert('해당 지역의 은행 정보를 찾을 수 없습니다.')
+        }
+      })
     }
   })
+}
+
+// 로컬 알림창 확인 버튼 처리 함수
+const handleConfirmMessage = () => {
+  console.log('알림창 확인 버튼 클릭됨')
+  // 필요한 경우 추가 작업 수행
 }
 
 // 지도 초기화
 onMounted(async () => {
   try {
     await loadKakaoMap()
+    
+    console.log('카카오맵 API가 로드되었습니다.')
+    
     const container = document.getElementById('map')
-    const options = {
-      center: new window.kakao.maps.LatLng(37.5665, 126.9780),
-      level: 3
+    if (!container) {
+      console.error('map 요소를 찾을 수 없습니다.')
+      return
     }
+    
+    // 지도 초기화 (서울시청 기준)
+    const options = {
+      center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
+      level: 3  // 확대 레벨
+    }
+    
+    console.log('지도 초기화 시작')
     mapInstance = new kakao.maps.Map(container, options)
+    console.log('지도 초기화 완료')
+    
+    // 알림창이 나타나는 경우 확인용 이벤트 리스너
+    window.addEventListener('error', function(e) {
+      console.error('전역 에러 발생:', e.message)
+    })
+    
   } catch (e) {
     console.error('카카오맵 로딩 실패:', e)
   }
