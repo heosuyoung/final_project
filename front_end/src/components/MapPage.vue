@@ -22,9 +22,35 @@
       </select>
 
       <button @click="searchBanks"
-              style="width: 100%; padding: 10px; background-color: orange; color: white; border: none; font-weight: bold;">
+              style="width: 100%; padding: 10px; background-color: orange; color: white; border: none; font-weight: bold; margin-bottom: 16px;">
         찾기
       </button>
+      
+      <!-- 출발지 정보 표시 -->
+      <div style="margin-bottom: 16px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+        <h4 style="margin-bottom: 8px;">출발지</h4>
+        <p style="margin: 0; font-size: 14px;">부산 강서구 녹산산업중로 333</p>
+      </div>
+      
+      <!-- 검색 결과 표시 영역 -->
+      <div v-if="searchResults.length > 0" style="margin-top: 16px;">
+        <h4 style="margin-bottom: 8px;">검색 결과</h4>
+        <div v-for="(place, index) in searchResults" :key="index" 
+             style="padding: 10px; margin-bottom: 8px; background-color: #eee; border-radius: 4px;">
+          <p style="font-weight: bold; margin: 0 0 5px 0;">{{ place.place_name }}</p>
+          <p style="font-size: 12px; margin: 0 0 5px 0;">{{ place.address_name }}</p>
+          <div style="display: flex; gap: 8px;">
+            <button @click="showDirections(place)" 
+                    style="padding: 5px; background-color: #4285f4; color: white; border: none; border-radius: 4px;">
+              길찾기
+            </button>
+            <button @click="focusOnMarker(index)"
+                    style="padding: 5px; background-color: #34a853; color: white; border: none; border-radius: 4px;">
+              위치 보기
+            </button>
+          </div>
+        </div>
+      </div>
       
       <!-- 로컬 알림창 확인 버튼 -->
       <button @click="handleConfirmMessage" class="confirm-button" style="display: none;">
@@ -49,13 +75,112 @@ const selectedDo = ref('')
 const selectedSigungu = ref('')
 const selectedBank = ref('')
 const selectedCountries = ref([])
+const searchResults = ref([]) // 검색 결과 저장
+
+// 출발지 정보 (고정)
+const startLocation = {
+  name: '부산 강서구 녹산산업중로 333',
+  lat: 35.094663, // 위도
+  lng: 128.855308 // 경도
+}
 
 let mapInstance = null
+let markers = []
+let infowindows = []
 
 // 시도 변경 시 시군구 갱신
 const updateSiGunGuList = () => {
   const target = mapInfo.find(item => item.name === selectedDo.value)
   selectedCountries.value = target ? target.countries : []
+}
+
+// 특정 마커로 지도 이동 및 인포윈도우 표시
+const focusOnMarker = (index) => {
+  if (markers.length > index && mapInstance) {
+    // 해당 마커 위치로 지도 이동
+    mapInstance.setCenter(markers[index].getPosition())
+    mapInstance.setLevel(3) // 확대 레벨 조정
+
+    // 다른 인포윈도우 닫기
+    infowindows.forEach(iw => iw.close())
+    
+    // 현재 인포윈도우 열기
+    infowindows[index].open(mapInstance, markers[index])
+  }
+}
+
+// 경로 안내 보여주기
+const showDirections = (place) => {
+  console.log('길찾기 버튼 클릭됨:', place)
+  
+  // 카카오맵 길찾기 API 호출
+  const { kakao } = window
+  if (!kakao || !kakao.maps || !kakao.maps.services) {
+    console.error('카카오맵 API가 로드되지 않았습니다.')
+    alert('카카오맵 API가 로드되지 않아 길찾기 기능을 사용할 수 없습니다.')
+    return
+  }
+  
+  // 출발지와 도착지 좌표 설정
+  const start = startLocation // 출발지 (녹산산업중로 333)
+  const end = {
+    name: place.place_name,
+    lat: place.y, 
+    lng: place.x
+  }
+  
+  // 카카오맵 길찾기 URL 생성
+  // 카카오맵 웹 URL 방식 사용: https://apis.map.kakao.com/web/guide/#routeurl
+  const kakaoMapUrl = `https://map.kakao.com/link/to/${end.name},${end.lat},${end.lng}/from/${start.name},${start.lat},${start.lng}`
+  
+  // 새 창에서 카카오맵 길찾기 열기
+  window.open(kakaoMapUrl, '_blank')
+  
+  // 지도에 경로 표시 (선택적 기능)
+  showRouteOnMap(start, end)
+}
+
+// 지도에 경로 표시하기
+const showRouteOnMap = (start, end) => {
+  // 이전 경로 삭제
+  if (window.currentRoute) {
+    window.currentRoute.setMap(null)
+  }
+  
+  // 경로 그리기
+  const linePath = [
+    new kakao.maps.LatLng(start.lat, start.lng),
+    new kakao.maps.LatLng(end.lat, end.lng)
+  ]
+  
+  // 경로 선 생성
+  const polyline = new kakao.maps.Polyline({
+    path: linePath,
+    strokeWeight: 5,
+    strokeColor: '#FF0000',
+    strokeOpacity: 0.7,
+    strokeStyle: 'solid'
+  })
+  
+  // 경로를 지도에 표시
+  polyline.setMap(mapInstance)
+  
+  // 현재 경로 저장 (나중에 삭제하기 위해)
+  window.currentRoute = polyline
+  
+  // 두 지점이 모두 보이게 지도 중심 및 레벨 조정
+  const bounds = new kakao.maps.LatLngBounds()
+  bounds.extend(new kakao.maps.LatLng(start.lat, start.lng))
+  bounds.extend(new kakao.maps.LatLng(end.lat, end.lng))
+  mapInstance.setBounds(bounds)
+}
+
+// 모든 기존 마커와 인포윈도우 제거 함수
+const clearMarkers = () => {
+  markers.forEach(marker => marker.setMap(null))
+  infowindows.forEach(infowindow => infowindow.close())
+  markers = []
+  infowindows = []
 }
 
 // 지도 로딩
@@ -86,6 +211,7 @@ const loadKakaoMap = () => {
     }
     
     const script = document.createElement('script')
+    // 반드시 services, drawing, clusterer 라이브러리 포함
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services,clusterer,drawing`
     script.async = true // 비동기 로드
     
@@ -99,7 +225,7 @@ const loadKakaoMap = () => {
     
     script.onerror = (e) => {
       console.error('Kakao Maps 스크립트 로드 실패', e)
-      console.error('카카오 개발자 사이트에서 http://localhost:5173 도메인이 등록되어 있는지 확인하세요.')
+      console.error('카카오 개발자 사이트에서 http://localhost:5179 도메인이 등록되어 있는지 확인하세요.')
       alert('카카오 지도를 불러오는데 실패했습니다. 개발자 도구에서 자세한 오류를 확인해주세요.')
       reject(e)
     }
@@ -151,17 +277,8 @@ const searchBanks = () => {
   // 키워드 검색 서비스 사용
   const places = new kakao.maps.services.Places()
   
-  // 마커와 인포윈도우를 저장할 배열
-  let markers = [];
-  let infowindows = [];
-  
-  // 모든 기존 마커와 인포윈도우 제거 함수
-  const clearMarkers = () => {
-    markers.forEach(marker => marker.setMap(null));
-    infowindows.forEach(infowindow => infowindow.close());
-    markers = [];
-    infowindows = [];
-  };
+  // 마커와 인포윈도우 초기화
+  clearMarkers()
 
   // 키워드로 장소 검색
   places.keywordSearch(query, function(result, status) {
@@ -169,51 +286,62 @@ const searchBanks = () => {
     console.log('[키워드 검색 상태]', status)
     
     if (status === kakao.maps.services.Status.OK) {
-      // 기존 마커들 제거
-      clearMarkers();
+      // 검색 결과 저장
+      searchResults.value = result
       
       // 첫번째 결과의 위치로 맵 이동 (확대 레벨 조정)
-      const firstCoords = new kakao.maps.LatLng(result[0].y, result[0].x);
-      mapInstance.setCenter(firstCoords);
-      mapInstance.setLevel(4); // 적절한 확대 레벨로 설정
+      const firstCoords = new kakao.maps.LatLng(result[0].y, result[0].x)
+      mapInstance.setCenter(firstCoords)
+      mapInstance.setLevel(4) // 적절한 확대 레벨로 설정
       
       // 검색된 모든 은행에 마커 표시
       result.forEach((place, index) => {
-        const coords = new kakao.maps.LatLng(place.y, place.x);
+        const coords = new kakao.maps.LatLng(place.y, place.x)
         
         // 마커 생성
         const marker = new kakao.maps.Marker({
           map: mapInstance,
           position: coords
-        });
-        markers.push(marker);
+        })
+        markers.push(marker)
         
         // 인포윈도우 생성
         const infoContent = `
-          <div style="padding:5px; width:150px; text-align:center;">
+          <div style="padding:5px; width:200px; text-align:center;">
             <strong>${place.place_name}</strong><br>
-            <span style="font-size:12px; color:#888;">${place.address_name}</span>
+            <span style="font-size:12px; color:#888;">${place.address_name}</span><br>
+            <button onclick="window.showDirectionsFromMap && window.showDirectionsFromMap(${index})" 
+                    style="margin-top:5px; padding:3px 8px; background:#4285f4; color:white; border:none; border-radius:3px; cursor:pointer;">
+              길찾기
+            </button>
           </div>
-        `;
+        `
         
         const infowindow = new kakao.maps.InfoWindow({
           content: infoContent
-        });
-        infowindows.push(infowindow);
+        })
+        infowindows.push(infowindow)
         
         // 마커 클릭시 인포윈도우 표시
         kakao.maps.event.addListener(marker, 'click', function() {
           // 다른 인포윈도우 닫기
-          infowindows.forEach(iw => iw.close());
+          infowindows.forEach(iw => iw.close())
           // 현재 인포윈도우 열기
-          infowindow.open(mapInstance, marker);
-        });
+          infowindow.open(mapInstance, marker)
+        })
         
         // 첫번째 마커는 기본적으로 인포윈도우 열기
         if (index === 0) {
-          infowindow.open(mapInstance, marker);
+          infowindow.open(mapInstance, marker)
         }
-      });
+      })
+      
+      // 인포윈도우 내 버튼으로 길찾기할 수 있도록 전역함수 설정
+      window.showDirectionsFromMap = (index) => {
+        if (searchResults.value && searchResults.value.length > index) {
+          showDirections(searchResults.value[index])
+        }
+      }
       
     } else {
       // Geocoder로 주소 검색 시도 (대안으로)
@@ -272,9 +400,9 @@ onMounted(async () => {
       return
     }
     
-    // 지도 초기화 (서울시청 기준)
+    // 지도 초기화 (출발지 기준)
     const options = {
-      center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
+      center: new window.kakao.maps.LatLng(startLocation.lat, startLocation.lng), // 출발지(녹산산업중로 333)
       level: 3  // 확대 레벨
     }
     
@@ -290,6 +418,35 @@ onMounted(async () => {
         kakao.maps.event.addListener(mapInstance, 'tilesloaded', function() {
           console.log('지도 타일 로딩 완료!')
         })
+        
+        // 출발지 마커 추가
+        const startMarker = new kakao.maps.Marker({
+          map: mapInstance,
+          position: new kakao.maps.LatLng(startLocation.lat, startLocation.lng),
+          title: '출발지',
+          // 출발지 마커 이미지 설정 (파란색 마커로 표시)
+          image: new kakao.maps.MarkerImage(
+            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_b.png', 
+            new kakao.maps.Size(36, 39), 
+            { offset: new kakao.maps.Point(13, 39) }
+          )
+        })
+        
+        // 출발지 인포윈도우
+        const startInfoWindow = new kakao.maps.InfoWindow({
+          content: `<div style="padding:5px; width:180px; text-align:center;">
+                     <strong>출발지</strong><br>
+                     <span style="font-size:12px; color:#888;">${startLocation.name}</span>
+                   </div>`
+        })
+        
+        // 마커 클릭 시 출발지 정보 표시
+        kakao.maps.event.addListener(startMarker, 'click', function() {
+          startInfoWindow.open(mapInstance, startMarker)
+        })
+        
+        // 초기에 출발지 인포윈도우 표시
+        startInfoWindow.open(mapInstance, startMarker)
       }
     } catch (mapError) {
       console.error('지도 객체 생성 실패:', mapError)
