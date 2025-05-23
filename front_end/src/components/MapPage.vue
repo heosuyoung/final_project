@@ -29,7 +29,8 @@
       <!-- 출발지 정보 표시 -->
       <div style="margin-bottom: 16px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
         <h4 style="margin-bottom: 8px;">출발지</h4>
-        <p style="margin: 0; font-size: 14px;">부산 강서구 녹산산업중로 333</p>
+        <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">SSAFY 부울경 캠퍼스</p>
+        <p style="margin: 0; font-size: 14px; color: #555;">부산 강서구 녹산산업중로 333</p>
       </div>
       
       <!-- 검색 결과 표시 영역 -->
@@ -79,7 +80,8 @@ const searchResults = ref([]) // 검색 결과 저장
 
 // 출발지 정보 (고정)
 const startLocation = {
-  name: '부산 강서구 녹산산업중로 333',
+  name: 'SSAFY 부울경 캠퍼스',
+  address: '부산 강서구 녹산산업중로 333',
   lat: 35.094663, // 위도
   lng: 128.855308 // 경도
 }
@@ -122,7 +124,7 @@ const showDirections = (place) => {
   }
   
   // 출발지와 도착지 좌표 설정
-  const start = startLocation // 출발지 (녹산산업중로 333)
+  const start = startLocation // 출발지 (SSAFY 부울경 캠퍼스)
   const end = {
     name: place.place_name,
     lat: place.y, 
@@ -423,21 +425,30 @@ onMounted(async () => {
         const startMarker = new kakao.maps.Marker({
           map: mapInstance,
           position: new kakao.maps.LatLng(startLocation.lat, startLocation.lng),
-          title: '출발지',
-          // 출발지 마커 이미지 설정 (파란색 마커로 표시)
+          title: startLocation.name,
+          // 출발지 마커 이모티콘을 더 눈에 띄는 큰 파란색 마커로 변경
           image: new kakao.maps.MarkerImage(
-            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/blue_b.png', 
-            new kakao.maps.Size(36, 39), 
-            { offset: new kakao.maps.Point(13, 39) }
+            // 큰 파란색 마커 이미지 (원래보다 더 큰 사이즈)
+            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png', 
+            new kakao.maps.Size(40, 42), 
+            { offset: new kakao.maps.Point(20, 42) }
           )
         })
         
-        // 출발지 인포윈도우
+        // 출발지 인포윈도우 - 더 눈에 띄게 디자인 변경
         const startInfoWindow = new kakao.maps.InfoWindow({
-          content: `<div style="padding:5px; width:180px; text-align:center;">
-                     <strong>출발지</strong><br>
-                     <span style="font-size:12px; color:#888;">${startLocation.name}</span>
-                   </div>`
+          content: `<div style="padding:10px; width:200px; text-align:center; border-radius:5px;">
+                     <div style="font-weight:bold; font-size:16px; color:#3366cc; margin-bottom:5px;">
+                       ${startLocation.name}
+                     </div>
+                     <div style="font-size:13px; color:#666; margin-bottom:5px;">
+                       ${startLocation.address}
+                     </div>
+                     <div style="font-size:11px; color:#0088cc; background-color:#f4f4f4; padding:3px; border-radius:3px;">
+                       출발지
+                     </div>
+                   </div>`,
+          removable: true // 닫기 버튼 표시
         })
         
         // 마커 클릭 시 출발지 정보 표시
