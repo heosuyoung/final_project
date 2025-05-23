@@ -8,14 +8,14 @@ import AutoInvestmentSection from './components/AutoInvestmentSection.vue'
 const route = useRoute()
 </script>
 
-<template>  <div :id="'app-wrapper'" :class="{ 'signup-bg-root': route.path === '/signup' || route.path === '/login' || route.path === '/profile' }">
+<template>
+  <div :id="'app-wrapper'" :class="{ 'signup-bg-root': route.path === '/signup' || route.path === '/login' || route.path === '/profile' }">
     <Header />
     <main :class="{ 'signup-main': route.path === '/signup' || route.path === '/login' || route.path === '/profile'}">
       <router-view />
       <template v-if="route.path === '/'">
-      <MainSection />
-      <StockComparisonSection />
-      <AutoInvestmentSection />
+        <StockComparisonSection />
+        <AutoInvestmentSection />
       </template>
     </main>
   </div>

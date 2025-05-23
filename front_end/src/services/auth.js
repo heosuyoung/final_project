@@ -58,44 +58,74 @@ export const signup = async (userData) => {
  */
 export const login = async (username, password) => {
   try {
-    // 실제 API 연결 - 현재는 주석 처리
-    // const response = await fetch(`${API_URL}/login/`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ username, password })
-    // });
+    // 현재 상태에서 백엔드 서버 연결 여부 확인
+    let isBackendConnected = false;
     
-    // if (!response.ok) {
-    //   const errorData = await response.json();
-    //   throw new Error(errorData.message || '로그인 처리 중 오류가 발생했습니다.');
-    // }
-    
-    // const data = await response.json();
-    // localStorage.setItem('token', data.token);
-    // localStorage.setItem('user', JSON.stringify(data.user));
-    // return data;
-    
-    // 임시 로컬 스토리지 구현
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    const user = registeredUsers.find(u => u.username === username && u.password === password);
-    
-    if (!user) {
-      throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.');
+    try {
+      // 백엔드 연결 상태 확인 (5초 타임아웃)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const checkResponse = await fetch(`${API_URL}/accounts/login/`, {
+        method: 'HEAD',
+        signal: controller.signal
+      }).catch(() => null);
+      
+      clearTimeout(timeoutId);
+      
+      isBackendConnected = checkResponse && checkResponse.ok;
+      console.log('백엔드 연결 상태:', isBackendConnected ? '연결됨' : '연결 안됨');
+    } catch (checkError) {
+      console.log('백엔드 연결 확인 실패:', checkError);
+      isBackendConnected = false;
     }
     
-    // 비밀번호를 제외한 사용자 정보 저장
-    const { password: _, ...userInfo } = user;
-    localStorage.setItem('user', JSON.stringify(userInfo));
-    localStorage.setItem('token', 'demo-token-' + Math.random().toString(36).substr(2));
-    
-    return { 
-      success: true, 
-      user: userInfo, 
-      token: localStorage.getItem('token'),
-      message: '로그인이 완료되었습니다.' 
-    };
+    // 백엔드가 연결된 경우 실제 API 호출
+    if (isBackendConnected) {
+      console.log('백엔드 서버로 로그인 요청 전송');
+      
+      const response = await fetch(`${API_URL}/accounts/login/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || '로그인 처리 중 오류가 발생했습니다.');
+      }
+      
+      const data = await response.json();
+      localStorage.setItem('token', data.token || 'backend-token');
+      localStorage.setItem('user', JSON.stringify(data.user || { username }));
+      return data;
+    } else {
+      console.log('백엔드 연결 불가, 로컬 스토리지 로그인 사용');
+      
+      // 임시 로컬 스토리지 구현
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      console.log('등록된 사용자 수:', registeredUsers.length);
+      
+      const user = registeredUsers.find(u => u.username === username && u.password === password);
+      
+      if (!user) {
+        throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.');
+      }
+      
+      // 비밀번호를 제외한 사용자 정보 저장
+      const { password: _, ...userInfo } = user;
+      localStorage.setItem('user', JSON.stringify(userInfo));
+      localStorage.setItem('token', 'demo-token-' + Math.random().toString(36).substr(2));
+      
+      return { 
+        success: true, 
+        user: userInfo, 
+        token: localStorage.getItem('token'),
+        message: '로그인이 완료되었습니다.' 
+      };
+    }
     
   } catch (error) {
     console.error('로그인 오류:', error);
