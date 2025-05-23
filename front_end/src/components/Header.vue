@@ -11,7 +11,7 @@
       </div>
       <nav class="nav">
         <ul>
-          <li><a href="#">예적금 추천</a></li>
+          <li><a href="#" @click.prevent="goToSavings">예적금 추천</a></li>
           <li><a href="#">주식 검색</a></li>
           <li><a href="#" @click.prevent="goToCommodities">현물가격변동(환율)</a></li>
           <li><a href="#" @click.prevent="goToMap">주변은행검색</a></li>
@@ -96,6 +96,11 @@ const goToMap = () => {
 // ✅ 추가된 함수: 현물가격변동(환율) 페이지로 이동
 const goToCommodities = () => {
   router.push('/commodities');
+};
+
+// ✅ 추가된 함수: 예적금 추천 페이지로 이동
+const goToSavings = () => {
+  router.push('/savings');
 };
 
 onMounted(() => {

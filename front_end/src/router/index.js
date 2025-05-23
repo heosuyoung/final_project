@@ -5,6 +5,7 @@ import SignupForm from '../components/SignupForm.vue'
 import ProfilePage from '../components/ProfilePage.vue'
 import MainSection from '../components/MainSection.vue'
 import CommoditiesPage from '../components/CommoditiesPage.vue'
+import SavingsRecommendation from '../components/SavingsRecommendation.vue'
 // 추가로 isAuthenticated 함수 import
 import { isAuthenticated } from '../services/auth.js'
 
@@ -14,7 +15,8 @@ const routes = [
   { path: '/login', component: LoginForm },
   { path: '/signup', component: SignupForm },
   { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
-  { path: '/commodities', component: CommoditiesPage }
+  { path: '/commodities', component: CommoditiesPage },
+  { path: '/savings', component: SavingsRecommendation }
 ]
 
 const router = createRouter({
