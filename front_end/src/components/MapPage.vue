@@ -25,9 +25,9 @@
               style="width: 100%; padding: 10px; background-color: orange; color: white; border: none; font-weight: bold; margin-bottom: 16px;">
         찾기
       </button>
-      
-      <!-- 출발지 정보 표시 -->
-      <div style="margin-bottom: 16px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+        <!-- 출발지 정보 표시 (클릭 가능) -->
+      <div style="margin-bottom: 16px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; cursor: pointer;"
+           @click="focusOnStartLocation">
         <h4 style="margin-bottom: 8px;">출발지</h4>
         <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">SSAFY 부울경 캠퍼스</p>
         <p style="margin: 0; font-size: 14px; color: #555;">부산 강서구 녹산산업중로 333</p>
@@ -89,6 +89,8 @@ const startLocation = {
 let mapInstance = null
 let markers = []
 let infowindows = []
+let startMarker = null      // 출발지 마커
+let startInfoWindow = null  // 출발지 인포윈도우
 
 // 시도 변경 시 시군구 갱신
 const updateSiGunGuList = () => {
@@ -108,6 +110,21 @@ const focusOnMarker = (index) => {
     
     // 현재 인포윈도우 열기
     infowindows[index].open(mapInstance, markers[index])
+  }
+}
+
+// 출발지(SSAFY 캠퍼스)로 지도 이동 및 인포윈도우 표시
+const focusOnStartLocation = () => {
+  if (mapInstance && startMarker && startInfoWindow) {
+    // 출발지 위치로 지도 이동
+    mapInstance.setCenter(new kakao.maps.LatLng(startLocation.lat, startLocation.lng))
+    mapInstance.setLevel(3) // 확대 레벨 조정
+    
+    // 다른 인포윈도우 닫기 (검색 결과 인포윈도우)
+    infowindows.forEach(iw => iw.close())
+    
+    // 출발지 인포윈도우 열기
+    startInfoWindow.open(mapInstance, startMarker)
   }
 }
 
@@ -331,11 +348,8 @@ const searchBanks = () => {
           // 현재 인포윈도우 열기
           infowindow.open(mapInstance, marker)
         })
-        
-        // 첫번째 마커는 기본적으로 인포윈도우 열기
-        if (index === 0) {
-          infowindow.open(mapInstance, marker)
-        }
+          // 첫번째 마커에 인포윈도우 자동 열기 제거
+        // 이제 마커 클릭 시에만 인포윈도우가 표시됩니다
       })
       
       // 인포윈도우 내 버튼으로 길찾기할 수 있도록 전역함수 설정
@@ -420,9 +434,8 @@ onMounted(async () => {
         kakao.maps.event.addListener(mapInstance, 'tilesloaded', function() {
           console.log('지도 타일 로딩 완료!')
         })
-        
-        // 출발지 마커 추가
-        const startMarker = new kakao.maps.Marker({
+          // 출발지 마커 추가
+        startMarker = new kakao.maps.Marker({
           map: mapInstance,
           position: new kakao.maps.LatLng(startLocation.lat, startLocation.lng),
           title: startLocation.name,
@@ -436,7 +449,7 @@ onMounted(async () => {
         })
         
         // 출발지 인포윈도우 - 더 눈에 띄게 디자인 변경
-        const startInfoWindow = new kakao.maps.InfoWindow({
+        startInfoWindow = new kakao.maps.InfoWindow({
           content: `<div style="padding:10px; width:200px; text-align:center; border-radius:5px;">
                      <div style="font-weight:bold; font-size:16px; color:#3366cc; margin-bottom:5px;">
                        ${startLocation.name}
@@ -456,8 +469,7 @@ onMounted(async () => {
           startInfoWindow.open(mapInstance, startMarker)
         })
         
-        // 초기에 출발지 인포윈도우 표시
-        startInfoWindow.open(mapInstance, startMarker)
+        // 초기에는 출발지 인포윈도우 표시하지 않음
       }
     } catch (mapError) {
       console.error('지도 객체 생성 실패:', mapError)
