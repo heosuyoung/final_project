@@ -1,0 +1,52 @@
+/* 선택된 개월 수에 대한 스타일 */
+.selected-term {
+  color: #00c853;
+  font-weight: 600;
+}
+
+.term-selection-header {
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #555;
+}
+
+/* 기간 선택 버튼 영역 스타일 */
+.term-selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.term-button {
+  padding: 10px 15px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  font-size: 15px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 80px;
+  color: #333;
+}
+
+.term-button:hover {
+  border-color: #00c853;
+}
+
+.term-button.active {
+  background-color: #00c853;
+  color: white;
+  border-color: #00c853;
+}
+
+/* 전체 삭제 버튼 스타일 개선 */
+.delete-all {
+  background-color: #f9e8e8;
+  color: #e53935;
+  font-weight: 500;
+}
+
+.delete-all:hover {
+  background-color: #ffe0e0;
+}

@@ -1,8 +1,6 @@
-<template>
-  <div class="savings-recommendation">
-    <h2>예적금 상품 추천</h2>
-    
-    <!-- 상단 필터 영역 -->
+<template>  <div class="savings-recommendation">
+    <h1 class="main-title">예적금 상품 추천</h1>
+      <!-- 상단 필터 영역 -->
     <div class="top-filter">
       <div class="filter-tabs">
         <button 
@@ -18,8 +16,9 @@
       <!-- 은행 선택 버튼 -->
       <div class="bank-filter">
         <button class="bank-select-button" @click="showBankModal = true">
-          <span v-if="selectedBanks.length === 0">전체 은행</span>
-          <span v-else>{{ selectedBanks.length }}개 은행 선택됨</span>
+          <span v-if="selectedBanks.length === banks.length">전체 은행</span>
+          <span v-else-if="selectedBanks.length > 0">{{ selectedBanks.length }}개 은행 선택됨</span>
+          <span v-else>은행 선택하기</span>
         </button>
       </div>
     </div>
@@ -36,23 +35,13 @@
           {{ condition.name }}
         </button>
       </div>
-    </div>
-    
-    <!-- 가입 기간 및 정렬 옵션 -->
-    <div class="period-sort-options">
-      <div class="period-options">
-        <button 
-          v-for="(period, index) in availablePeriods" 
-          :key="index"
-          :class="['period-button', selectedPeriod === period.value ? 'active' : '']" 
-          @click="selectedPeriod = period.value"
-        >
-          {{ period.label }}
+    </div>    <!-- 가입 기간 및 정렬 옵션 -->    <div class="period-sort-options">
+      <div class="filter-options">        <button class="filter-button" @click="showPeriodAmountModal = true">
+          <span>기간-금액</span>
+          <span class="filter-selected" style="color: #333;">{{ selectedPeriod === 0 ? '전체 기간' : selectedPeriod + '개월' }} · {{ formatAmount(selectedAmount) }}</span>
         </button>
-      </div>
-      <div class="deposit-amount">
-        <button class="amount-button" @click="showAmountModal = true">
-          <span>가입금액: {{ formatAmount(selectedAmount) }}</span>
+        <button class="reset-filter-button" @click="resetPeriodAmountFilter">
+          <span>초기화</span>
         </button>
       </div>
       <div class="sort-options">
@@ -187,16 +176,17 @@
               @click="bankTab = '2금융권'"
             >2금융권</button>
           </div>
-          
-          <div class="bank-selection">
-            <label class="select-all">
-              <input 
-                type="checkbox" 
-                :checked="isAllBanksSelected" 
-                @click="toggleAllBanks"
-              >
-              전체 선택
-            </label>
+            <div class="bank-selection">
+            <div class="select-all-wrapper">
+              <label class="select-all">
+                <input 
+                  type="checkbox" 
+                  :checked="isCurrentTabSelected" 
+                  @click="toggleAllBanksInCurrentTab"
+                >
+                <span class="select-all-text">전체 선택</span>
+              </label>
+            </div>
             
             <div class="bank-grid">
               <div 
@@ -204,17 +194,15 @@
                 :key="bank.code" 
                 class="bank-item"
               >
-                <label>
-                  <input 
-                    type="checkbox" 
-                    :value="bank.code" 
-                    v-model="selectedBanks"
-                  >
+                <div class="bank-card" :class="{ 'selected': selectedBanks.includes(bank.code) }" @click="toggleBankSelection(bank.code)">
                   <div class="bank-logo-container">
                     <img :src="bank.logo" :alt="bank.name" class="bank-logo-img">
                   </div>
                   <div class="bank-name-text">{{ bank.name }}</div>
-                </label>
+                  <div class="bank-check" v-if="selectedBanks.includes(bank.code)">
+                    <span class="check-mark">✓</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -224,50 +212,65 @@
           <button class="apply-button" @click="applyBankFilter">금융사 선택 적용하기</button>
         </div>
       </div>
-    </div>
-    
-    <!-- 가입금액 선택 모달 -->
-    <div class="modal" v-if="showAmountModal">
-      <div class="modal-content amount-modal">
+    </div>    <!-- 기간-금액 선택 모달 -->
+    <div class="modal" v-if="showPeriodAmountModal">
+      <div class="modal-content period-amount-modal">
         <div class="modal-header">
           <h3>가입 기간</h3>
-          <button class="close-button" @click="showAmountModal = false">&times;</button>
+          <button class="close-button" @click="showPeriodAmountModal = false">&times;</button>
         </div>
         
-        <div class="modal-body">
-          <!-- 가입 기간 선택 (월 단위) -->
-          <div class="period-grid">
-            <div 
+        <div class="modal-body">          <!-- 가입 기간 선택 (월 단위) -->          <div class="term-selection-header">현재 선택: <span class="selected-term">{{ selectedPeriod === 0 ? '전체 기간' : selectedPeriod + '개월' }}</span></div>          <div class="term-selection">
+            <button 
+              class="term-button all-term-button"
+              :class="{ 'active': selectedPeriod === 0 }"
+              @click="selectedPeriod = 0"
+              style="background-color: #f5f6fa; color: #333; border: 1px solid #e0e0e0;"
+            >
+              전체 기간
+            </button>
+            <button 
               v-for="month in depositPeriods" 
               :key="month"
-              :class="['period-item', selectedPeriod === month ? 'active' : '']" 
+              :class="['term-button', selectedPeriod === month ? 'active' : '']" 
               @click="selectedPeriod = month"
+              style="background-color: #f5f6fa; color: #333; border: 1px solid #e0e0e0;"
             >
               {{ month }}개월
-            </div>
+            </button>
           </div>
-          
-          <h3 class="amount-title">금액 입력</h3>
+            <h3 class="amount-title">가입 금액</h3>
           
           <!-- 금액 입력 키패드 -->
           <div class="amount-keypad">
-            <div class="amount-display">{{ formattedInputAmount }}</div>
+            <div class="amount-display">{{ formattedInputAmount || '0원' }}</div>
             
-            <div class="keypad-grid">
-              <button 
-                v-for="n in 9" 
-                :key="n" 
-                class="key-button" 
-                @click="appendDigit(n)"
-              >{{ n }}</button>
-              <button class="key-button" @click="appendDigit(0)">0</button>
-              <button class="key-button" @click="clearLastDigit()">&larr;</button>
+            <button 
+              class="all-amount-button"
+              @click="selectAllAmounts"
+            >
+              전체 금액으로 검색하기
+            </button>
+            
+            <div class="numpad-grid">
+              <button class="numpad-button" @click="appendDigit(1)">1</button>
+              <button class="numpad-button" @click="appendDigit(2)">2</button>
+              <button class="numpad-button" @click="appendDigit(3)">3</button>
+              <button class="numpad-button" @click="appendDigit(4)">4</button>
+              <button class="numpad-button" @click="appendDigit(5)">5</button>
+              <button class="numpad-button" @click="appendDigit(6)">6</button>              <button class="numpad-button" @click="appendDigit(7)">7</button>
+              <button class="numpad-button" @click="appendDigit(8)">8</button>
+              <button class="numpad-button" @click="appendDigit(9)">9</button>              <button class="numpad-button" @click="clearLastDigit()">←</button>
+              <button class="numpad-button" @click="appendDigit(0)">0</button>
+              <button class="numpad-button delete-all" @click="clearInputAmount">
+                <span class="delete-all-text">전체 삭제</span>
+              </button>
             </div>
           </div>
         </div>
         
         <div class="modal-footer">
-          <button class="apply-button" @click="applyAmountFilter">적용</button>
+          <button class="apply-button" @click="applyPeriodAmountFilter">적용</button>
         </div>
       </div>
     </div>
@@ -277,6 +280,7 @@
 
 <script>
 import axios from 'axios';
+import './term-amount-styles.css';
 
 export default {
   name: 'SavingsRecommendation',
@@ -292,12 +296,11 @@ export default {
       selectedBanks: [],
       
       // 우대조건 필터
-      selectedConditions: [],
-      
-      // 가입 기간 및 금액
+      selectedConditions: [],        // 가입 기간 및 금액
       showAmountModal: false,
-      selectedPeriod: 12, // 기본 12개월
-      selectedAmount: 1000000, // 기본 100만원
+      showPeriodAmountModal: false,
+      selectedPeriod: 0, // 기본 전체 기간
+      selectedAmount: 0, // 기본 전체 금액
       inputAmount: '',
       
       // 정렬 및 페이지네이션
@@ -360,20 +363,21 @@ export default {
       ]
     };
   },
-  
-  computed: {
+    computed: {
     // 은행 탭에 따른 필터링된 은행 목록
     filteredBanks() {
       return this.banks.filter(bank => bank.type === this.bankTab);
     },
     
+    // 현재 탭의 모든 은행이 선택되었는지 여부
+    isCurrentTabSelected() {
+      const banksInCurrentTab = this.banks.filter(bank => bank.type === this.bankTab).map(b => b.code);
+      return banksInCurrentTab.every(code => this.selectedBanks.includes(code));
+    },
+    
     // 모든 은행이 선택되었는지 여부
-    isAllBanksSelected() {
-      const banksInCurrentTab = this.banks.filter(bank => bank.type === this.bankTab);
-      const banksInCurrentTabCount = banksInCurrentTab.length;
-      const selectedBanksInCurrentTab = banksInCurrentTab.filter(bank => this.selectedBanks.includes(bank.code)).length;
-      
-      return banksInCurrentTabCount > 0 && banksInCurrentTabCount === selectedBanksInCurrentTab;
+    isAllSelected() {
+      return this.selectedBanks.length === this.banks.length;
     },
     
     // 입력된 금액 포맷팅
@@ -389,7 +393,7 @@ export default {
       // 상품 유형에 따른 필터링
       result = result.filter(product => product.prdt_div === this.productType);
       
-      // 선택된 은행이 있는 경우 은행 필터링
+      // 선택된 은행이 있는 경우에만 은행 필터링
       if (this.selectedBanks.length > 0) {
         result = result.filter(product => {
           // 은행 코드로 변환하는 로직이 필요
@@ -421,19 +425,6 @@ export default {
         });
       }
       
-      // 가입 기간에 따른 필터링 (옵션 정보에서 해당 기간만 필터)
-      if (this.selectedPeriod) {
-        result = result.filter(product => {
-          if (!product.options || product.options.length === 0) return false;
-          
-          // 해당 기간을 가진 옵션이 있는지 확인
-          return product.options.some(option => {
-            const saveTerm = parseInt(option.save_trm) || 0;
-            return saveTerm === this.selectedPeriod;
-          });
-        });
-      }
-      
       // 정렬 옵션에 따른 정렬
       result.sort((a, b) => {
         if (this.sortOption === 'maxRate') {
@@ -452,7 +443,7 @@ export default {
     
     // 전체 페이지 수 계산
     totalPages() {
-      // 기본 필터링 (상품 유형, 은행, 우대조건, 가입 기간)
+      // 기본 필터링 (상품 유형, 은행, 우대조건)
       let filtered = [...this.products];
       
       // 상품 유형에 따른 필터링
@@ -489,27 +480,22 @@ export default {
         });
       }
       
-      // 가입 기간에 따른 필터링 (옵션 정보에서 해당 기간만 필터)
-      if (this.selectedPeriod) {
-        filtered = filtered.filter(product => {
-          if (!product.options || product.options.length === 0) return false;
-          return product.options.some(option => {
-            const saveTerm = parseInt(option.save_trm) || 0;
-            return saveTerm === this.selectedPeriod;
-          });
-        });
-      }
-      
       const totalCount = filtered.length;
       return Math.max(1, Math.ceil(totalCount / this.itemsPerPage));
     }
   },
-  
-  mounted() {
+    mounted() {
+    // 컴포넌트 마운트 시 데이터 로딩 (은행은 선택하지 않은 상태로 시작)
+    this.selectedBanks = []; // 모든 은행을 보여주기 위해 비어있는 배열로 시작
     this.fetchProducts();
   },
   
   methods: {
+    // 모든 은행 선택하기
+    selectAllBanks() {
+      this.selectedBanks = this.banks.map(bank => bank.code);
+    },
+    
     // 상품 데이터 가져오기
     async fetchProducts() {
       this.loading = true;
@@ -620,7 +606,9 @@ export default {
       
       // 선택된 가입 기간에 해당하는 금리만 필터링
       let options = product.options;
-      if (this.selectedPeriod) {
+      
+      // 기간이 선택된 경우에만 필터링 적용
+      if (this.selectedPeriod && this.selectedPeriod !== 0) {
         options = options.filter(option => {
           const saveTerm = parseInt(option.save_trm) || 0;
           return saveTerm === this.selectedPeriod;
@@ -648,7 +636,9 @@ export default {
       
       // 선택된 가입 기간에 해당하는 금리만 필터링
       let options = product.options;
-      if (this.selectedPeriod) {
+      
+      // 기간이 선택된 경우에만 필터링 적용
+      if (this.selectedPeriod && this.selectedPeriod !== 0) {
         options = options.filter(option => {
           const saveTerm = parseInt(option.save_trm) || 0;
           return saveTerm === this.selectedPeriod;
@@ -692,7 +682,7 @@ export default {
     
     // 금액 포맷팅
     formatAmount(amount) {
-      if (!amount) return '제한 없음';
+      if (!amount || amount === 0) return '전체 금액';
       
       // 금액 포맷팅 (원 단위)
       const amountNum = parseInt(amount);
@@ -721,12 +711,11 @@ export default {
       
       return bank ? bank.logo : defaultLogo;
     },
-    
-    // 모든 은행 선택/해제 토글
-    toggleAllBanks() {
+      // 현재 탭의 모든 은행 선택/해제 토글
+    toggleAllBanksInCurrentTab() {
       const banksInCurrentTab = this.banks.filter(bank => bank.type === this.bankTab).map(b => b.code);
       
-      if (this.isAllBanksSelected) {
+      if (this.isCurrentTabSelected) {
         // 현재 탭의 모든 은행 선택 해제
         this.selectedBanks = this.selectedBanks.filter(code => !banksInCurrentTab.includes(code));
       } else {
@@ -739,6 +728,28 @@ export default {
         });
         this.selectedBanks = newSelection;
       }
+    },
+    
+    // 개별 은행 선택/해제 토글
+    toggleBankSelection(bankCode) {
+      const index = this.selectedBanks.indexOf(bankCode);
+      if (index === -1) {
+        // 선택되지 않은 은행 선택
+        this.selectedBanks.push(bankCode);
+      } else {
+        // 이미 선택된 은행 해제
+        this.selectedBanks.splice(index, 1);
+      }
+    },
+    
+    // 모든 은행 선택 토글 메서드
+    toggleAllBanksSelection() {
+      if (this.isAllSelected) {
+        this.selectedBanks = [];
+      } else {
+        this.selectAllBanks();
+      }
+      this.fetchProducts();
     },
     
     // 은행 선택 필터 적용
@@ -759,12 +770,36 @@ export default {
       this.inputAmount = this.inputAmount.slice(0, -1);
     },
     
+    // 전체 금액 초기화
+    clearInputAmount() {
+      this.inputAmount = '';
+    },
+    
     // 금액 필터 적용
     applyAmountFilter() {
       if (this.inputAmount) {
         this.selectedAmount = parseInt(this.inputAmount);
       }
       this.showAmountModal = false;
+    },
+      // 기간-금액 필터 적용
+    applyPeriodAmountFilter() {
+      if (this.inputAmount) {
+        this.selectedAmount = parseInt(this.inputAmount);
+      } else {
+        // 금액 미선택 시 0으로 설정하여 전체 금액 검색
+        this.selectedAmount = 0;
+      }
+      this.showPeriodAmountModal = false;
+      this.fetchProducts();
+    },
+    
+    // 기간-금액 필터 초기화
+    resetPeriodAmountFilter() {
+      this.selectedPeriod = 0; // 기간 미선택(전체 기간)으로 초기화
+      this.selectedAmount = 0; // 금액 미선택(전체 금액)으로 초기화
+      this.inputAmount = '';
+      this.fetchProducts();
     },
     
     // 우대조건 토글
@@ -778,7 +813,36 @@ export default {
       
       // 조건 변경 시 데이터 다시 불러오기
       this.fetchProducts();
-    }
+    },
+    
+    // 현재 탭의 모든 은행 선택/해제 토글
+    toggleAllBanksInCurrentTab() {
+      const banksInCurrentTab = this.filteredBanks.map(b => b.code);
+      
+      if (this.isCurrentTabSelected) {
+        // 현재 탭의 모든 은행 선택 해제
+        this.selectedBanks = this.selectedBanks.filter(code => !banksInCurrentTab.includes(code));
+      } else {
+        // 현재 탭의 모든 은행 선택
+        this.selectedBanks = [...new Set([...this.selectedBanks, ...banksInCurrentTab])];
+      }
+    },
+    
+    // 은행 선택 토글
+    toggleBankSelection(bankCode) {
+      const index = this.selectedBanks.indexOf(bankCode);
+      if (index === -1) {
+        this.selectedBanks.push(bankCode);
+      } else {
+        this.selectedBanks.splice(index, 1);
+      }
+    },
+    
+    // 전체 금액 선택
+    selectAllAmounts() {
+      this.selectedAmount = 0;
+      this.inputAmount = '';
+    },
   }
 }
 </script>
@@ -793,11 +857,12 @@ export default {
   color: #333;
 }
 
-h2 {
+.main-title {
   font-size: 28px;
-  margin-bottom: 25px;
+  margin: 20px 0 25px 0;
   color: #333;
   font-weight: 700;
+  padding-top: 25px;
 }
 
 /* 상단 필터 영역 */
@@ -876,12 +941,56 @@ h2 {
   gap: 10px;
 }
 
-.period-options {
+.filter-options {
   display: flex;
   gap: 8px;
 }
 
-.period-button, .sort-button, .amount-button {
+.filter-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-button:hover {
+  border-color: #00c853;
+}
+
+.reset-filter-button {
+  padding: 5px 10px;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+
+.reset-filter-button:hover {
+  background-color: #e0e0e0;
+}
+
+.filter-selected {
+  margin-top: 5px;
+  font-weight: 600;
+  color: #00c853;
+}
+
+.sort-options {
+  display: flex;
+  gap: 10px;
+}
+
+.sort-button {
   padding: 8px 15px;
   border-radius: 5px;
   background-color: white;
@@ -891,7 +1000,7 @@ h2 {
   transition: all 0.2s;
 }
 
-.period-button.active, .sort-button.active {
+.sort-button.active {
   background-color: #00c853;
   color: white;
   border-color: #00c853;
@@ -1157,30 +1266,43 @@ h2 {
 /* 은행 선택 모달 스타일 */
 .bank-tabs {
   display: flex;
-  gap: 10px;
+  border-bottom: 1px solid #eee;
   margin-bottom: 20px;
 }
 
 .bank-tab {
-  padding: 8px 15px;
-  border-radius: 5px;
-  background-color: #f5f6fa;
+  padding: 12px 20px;
+  background-color: transparent;
   border: none;
-  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  font-size: 16px;
   cursor: pointer;
+  transition: all 0.2s;
+  color: #888;
 }
 
 .bank-tab.active {
-  background-color: #00c853;
-  color: white;
+  border-bottom: 2px solid #00c853;
+  color: #00c853;
+  font-weight: 600;
+}
+
+.select-all-wrapper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
 .select-all {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 15px;
   font-size: 14px;
+  cursor: pointer;
+}
+
+.select-all-text {
+  font-weight: 500;
 }
 
 .bank-grid {
@@ -1191,19 +1313,52 @@ h2 {
 
 .bank-item {
   display: flex;
+  justify-content: center;
+}
+
+.bank-card {
+  display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 15px 10px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  cursor: pointer;
+  position: relative;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.bank-card.selected {
+  border-color: #00c853;
+  background-color: #e8f5e9;
 }
 
 .bank-logo-container {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-color: #f5f6fa;
+  background-color: white;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.bank-check {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  background-color: #00c853;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
 }
 
 .bank-logo-img {
@@ -1273,10 +1428,31 @@ h2 {
 .key-button {
   height: 50px;
   background-color: white;
-  border: 1px solid #eee;
+  border: 1px solid #e0e0e0;
   border-radius: 5px;
   font-size: 18px;
   cursor: pointer;
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  grid-gap: 10px;
+}
+
+.numpad-button {
+  padding: 15px 0;
+  font-size: 18px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.numpad-button:hover {
+  background-color: #f5f5f5;
 }
 
 /* 페이지네이션 */

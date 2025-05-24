@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="160" height="160" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+  <rect width="160" height="160" fill="white" fill-opacity="0"/>
+  <g fill="#FFB900">
+    <!-- 'K' shape -->
+    <path d="M40 40 L60 70 L40 100 L55 100 L75 70 L55 40 Z"/>
+    <!-- 'b' shape -->
+    <path d="M85 40 C110 40, 130 55, 130 70 C130 85, 110 100, 85 100 L85 40 Z"/>
+    <!-- Center part of 'K' -->
+    <path d="M60 65 L85 65 L85 75 L60 75 Z"/>
+  </g>
+</svg>
