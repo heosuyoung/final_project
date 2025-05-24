@@ -8,6 +8,11 @@ import CommoditiesPage from '../components/CommoditiesPage.vue'
 import SavingsRecommendation from '../components/SavingsRecommendation.vue'
 // 추가로 isAuthenticated 함수 import
 import { isAuthenticated } from '../services/auth.js'
+import StocksPage from '@/components/StocksPage.vue'
+import StockCommunity from '@/components/StockCommunity.vue'
+import WritePost from '@/components/WritePost.vue'
+import PostDetail from '@/components/PostDetail.vue'
+import UserProfile from '../components/UserProfile.vue'
 
 const routes = [
   { path: '/', component: MainSection },
@@ -16,8 +21,14 @@ const routes = [
   { path: '/signup', component: SignupForm },
   { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
   { path: '/commodities', component: CommoditiesPage },
-  { path: '/savings', component: SavingsRecommendation }
+  { path: '/savings', component: SavingsRecommendation },
+  { path: '/stocks', component: StocksPage },
+  { path: '/community/:code', component: StockCommunity },
+  { path: '/community/:code/write', component: WritePost },
+  { path: '/community/:code/:postId', component: PostDetail },
+  { path: '/user/:username', component: UserProfile }  // ✅ 하나만 남기기
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),

@@ -42,6 +42,10 @@ const handleLogin = async () => {
     
     // 로그인 성공 메시지 즉시 표시 후 비동기 처리 진행
     alert('로그인 성공!')
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('username', username.value)
+    }
     
     // URL에서 redirect 쿼리 파라미터 확인
     const redirect = router.currentRoute.value.query.redirect

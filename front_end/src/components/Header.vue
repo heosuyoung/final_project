@@ -12,7 +12,7 @@
       <nav class="nav">
         <ul>
           <li><a href="#" @click.prevent="goToSavings">예적금 추천</a></li>
-          <li><a href="#">주식 검색</a></li>
+          <li><a href="#" @click.prevent="goToStockSearch">주식 검색</a></li>
           <li><a href="#" @click.prevent="goToCommodities">현물가격변동(환율)</a></li>
           <li><a href="#" @click.prevent="goToMap">주변은행검색</a></li>
         </ul>
@@ -103,6 +103,9 @@ const goToSavings = () => {
   router.push('/savings');
 };
 
+const goToStockSearch = () => {
+  router.push('/stocks');
+};
 onMounted(() => {
   window.addEventListener('scroll', handleScroll);
 });

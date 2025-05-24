@@ -1,0 +1,202 @@
+[
+  {
+    "name": "삼성전자",
+    "code": "005930",
+    "price": "54,200",
+    "changeRate": "-0.91%",
+    "marketCap": "3,208,444억",
+    "volume": "11,240,044",
+    "logo": "samsung.png",
+    "isFavorite": false
+  },
+  {
+    "name": "SK하이닉스",
+    "code": "000660",
+    "price": "200,000",
+    "changeRate": "-1.57%",
+    "marketCap": "1,456,005억",
+    "volume": "1,433,493",
+    "logo": "skhynix.png",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성바이오로직스",
+    "code": "207940",
+    "price": "1,016,000",
+    "changeRate": "-0.53%",
+    "marketCap": "723,128억",
+    "volume": "108,587",
+    "logo": "samsungbio.png",
+    "isFavorite": false
+  },
+  {
+    "name": "LG에너지솔루션",
+    "code": "373220",
+    "price": "268,000",
+    "changeRate": "-2.37%",
+    "marketCap": "627,120억",
+    "volume": "213,740",
+    "logo": "lgenergy.png",
+    "isFavorite": false
+  },
+  {
+    "name": "카카오",
+    "code": "035720",
+    "price": "47,300",
+    "changeRate": "+1.20%",
+    "marketCap": "400,000억",
+    "volume": "2,000,000",
+    "logo": "kakao.png",
+    "isFavorite": false
+  },
+  {
+    "name": "NAVER",
+    "code": "035420",
+    "price": "183,100",
+    "changeRate": "-1.00%",
+    "marketCap": "290,098억",
+    "volume": "257,074",
+    "logo": "naver.png",
+    "isFavorite": false
+  },
+  {
+    "name": "기아",
+    "code": "000270",
+    "price": "87,100",
+    "changeRate": "-2.25%",
+    "marketCap": "346,373억",
+    "volume": "879,529",
+    "logo": "kia.png",
+    "isFavorite": false
+  },
+  {
+    "name": "현대차",
+    "code": "005380",
+    "price": "179,900",
+    "changeRate": "-1.37%",
+    "marketCap": "368,359억",
+    "volume": "822,020",
+    "logo": "hyundai.png",
+    "isFavorite": false
+  },
+  {
+    "name": "LG화학",
+    "code": "051910",
+    "price": "426,000",
+    "changeRate": "+0.75%",
+    "marketCap": "380,000억",
+    "volume": "450,000",
+    "logo": "lgchem.png",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성SDI",
+    "code": "006400",
+    "price": "613,000",
+    "changeRate": "-1.45%",
+    "marketCap": "420,000억",
+    "volume": "398,151",
+    "logo": "samsungsdi.png",
+    "isFavorite": false
+  },
+  {
+    "name": "셀트리온",
+    "code": "068270",
+    "price": "152,700",
+    "changeRate": "-0.82%",
+    "marketCap": "340,544억",
+    "volume": "398,151",
+    "logo": "celltrion.png",
+    "isFavorite": false
+  },
+  {
+    "name": "한화솔루션",
+    "code": "009830",
+    "price": "76,000",
+    "changeRate": "-1.68%",
+    "marketCap": "232,874억",
+    "volume": "94,220",
+    "logo": "hanwha.png",
+    "isFavorite": false
+  },
+  {
+    "name": "두산에너빌리티",
+    "code": "034020",
+    "price": "40,800",
+    "changeRate": "-6.67%",
+    "marketCap": "262,134억",
+    "volume": "16,382,809",
+    "logo": "doosan.png",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성물산",
+    "code": "028260",
+    "price": "115,000",
+    "changeRate": "-0.90%",
+    "marketCap": "241,367억",
+    "volume": "782,665",
+    "logo": "samsungmul.png",
+    "isFavorite": false
+  },
+  {
+    "name": "HMM",
+    "code": "011200",
+    "price": "17,000",
+    "changeRate": "+0.30%",
+    "marketCap": "150,000억",
+    "volume": "2,345,678",
+    "logo": "hmm.png",
+    "isFavorite": false
+  },
+  {
+    "name": "롯데케미칼",
+    "code": "011170",
+    "price": "145,000",
+    "changeRate": "-2.00%",
+    "marketCap": "210,000억",
+    "volume": "345,000",
+    "logo": "lottechem.png",
+    "isFavorite": false
+  },
+  {
+    "name": "CJ제일제당",
+    "code": "097950",
+    "price": "305,000",
+    "changeRate": "-1.25%",
+    "marketCap": "190,000억",
+    "volume": "110,000",
+    "logo": "cj.png",
+    "isFavorite": false
+  },
+  {
+    "name": "SK이노베이션",
+    "code": "096770",
+    "price": "160,000",
+    "changeRate": "-0.80%",
+    "marketCap": "200,000억",
+    "volume": "340,000",
+    "logo": "skinno.png",
+    "isFavorite": false
+  },
+  {
+    "name": "포스코퓨처엠",
+    "code": "003670",
+    "price": "300,000",
+    "changeRate": "+2.00%",
+    "marketCap": "280,000억",
+    "volume": "120,000",
+    "logo": "posco.png",
+    "isFavorite": false
+  },
+  {
+    "name": "현대모비스",
+    "code": "012330",
+    "price": "250,500",
+    "changeRate": "-0.65%",
+    "marketCap": "270,000억",
+    "volume": "310,000",
+    "logo": "mobis.png",
+    "isFavorite": false
+  }
+]
