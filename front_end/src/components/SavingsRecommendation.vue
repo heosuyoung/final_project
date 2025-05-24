@@ -219,15 +219,60 @@ export default {
       // 페이지 초기화
       this.currentPage = 1;
       
-      // CORS 문제로 인해 샘플 데이터를 바로 사용
-      this.useSampleData();
+      // 백엔드 API 호출
+      const apiUrl = 'http://localhost:8000/boards/api/savings/';
       
-      // 로딩 상태를 끝내기 위해 타이머 설정
-      setTimeout(() => {
-        this.loading = false;
-      }, 1000);
+      // 선택된 조건을 적절한 형식으로 변환
+      const conditionValues = this.selectedConditions.map(condition => {
+        // 여기서 값들을 실제 백엔드에서 필터링할 수 있는 형태로 변환
+        switch(condition) {
+          case 'card': return '카드';
+          case 'utilities': return '공과금';
+          case 'salary': return '급여';
+          case 'online': return '비대면';
+          case 'housing': return '주택청약';
+          case 'first': return '첫거래';
+          case 'accounts': return '예적금';
+          case 'redeposit': return '재예치';
+          case 'checking': return '입출금';
+          case 'app': return '앱';
+          default: return condition;
+        }
+      });
       
-      // API 호출 부분은 주석 처리 (CORS 문제 해결 후 활성화 가능)
+      // API 요청 파라미터 구성
+      const params = {
+        type: this.productType === 'S' ? 'savings' : 'deposit',
+        sort: this.sortOption,
+        conditions: conditionValues
+      };
+      
+      try {
+        const response = await axios.get(apiUrl, { params });
+        console.log('백엔드 API 응답 데이터:', response.data);
+        
+        if (Array.isArray(response.data)) {
+          this.products = response.data.map(product => ({
+            ...product,
+            prdt_div: params.type === 'savings' ? 'S' : 'D'
+          }));
+          console.log('상품 데이터 로딩 완료:', this.products.length, '개 상품');
+        } else {
+          console.error('API에서 예상한 형식의 데이터를 반환하지 않았습니다');
+          // 오류 시 샘플 데이터 사용
+          this.useSampleData();
+        }
+      } catch (error) {
+        console.error('금융 상품 데이터를 가져오는 중 오류가 발생했습니다:', error);
+        // 오류 발생 시 샘플 데이터 사용
+        this.useSampleData();
+      } finally {
+        setTimeout(() => {
+          this.loading = false;
+        }, 500);
+      }
+      
+      // 기존 API 호출 부분은 주석 처리
       /*
       try {
         // 적금 상품 가져오기

@@ -10,6 +10,9 @@ env.read_env(env_file=os.path.join(BASE_DIR, '.env'))  # .env 경로 명시
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 
+FSS_API_KEY = env("FSS_API_KEY")
+
+
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [

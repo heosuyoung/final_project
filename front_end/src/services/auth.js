@@ -306,3 +306,26 @@ export const isAuthenticated = () => {
   
   return hasToken && hasUser;
 };
+
+/**
+ * 금융감독원 API 키를 가져오는 함수
+ * @returns {Promise<string>} API 키
+ */
+export const getApiKey = async () => {
+  try {
+    const response = await fetch(`${API_URL}/boards/get-api-key/`, {
+      method: 'GET',
+      credentials: 'include', // 인증 쿠키 포함
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch API key');
+    }
+
+    const data = await response.json();
+    return data.api_key;
+  } catch (error) {
+    console.error('Error fetching API key:', error);
+    throw error;
+  }
+};
