@@ -31,7 +31,9 @@
       </template>
       <template v-else>
         <p>아직 댓글이 없습니다.</p>
-      </template>      <div v-if="isLoggedIn" class="comment-input-container">
+      </template>
+
+      <div v-if="isLoggedIn" class="comment-input-container">
         <input v-model="newComment" placeholder="댓글 입력..." />
         <button @click="addComment" class="comment-submit-btn">작성</button>
       </div>
@@ -47,6 +49,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import { isAuthenticated } from '../services/auth'
 
 const route = useRoute()
@@ -55,23 +58,24 @@ const stockCode = route.params.code
 const postId = route.params.postId
 const commentKey = `comments_${stockCode}_${postId}`
 
-const isLoggedIn = computed(() => isAuthenticated())
-const stockMap = {
-  '005930': '삼성전자',
-  '000660': 'SK하이닉스',
-  '207940': '삼성바이오로직스',
-  '373220': 'LG에너지솔루션',
-  '035720': '카카오',
-  '035420': 'NAVER',
-  '005380': '현대차',
-  '006400': '삼성SDI'
-}
-const stockName = ref(stockMap[stockCode] || '알 수 없는 종목')
+const stockName = ref('') // ✅ 종목명 받아올 변수
 const post = ref(null)
 const comments = ref([])
 const newComment = ref('')
+const isLoggedIn = computed(() => isAuthenticated())
 
-onMounted(() => {
+onMounted(async () => {
+  // ✅ 종목명 자동으로 불러오기
+  try {
+    const res = await axios.get('http://localhost:5000/stocks')
+    const match = res.data.find(item => item.code === stockCode)
+    stockName.value = match?.name || stockCode
+  } catch (err) {
+    console.error('종목명 불러오기 실패', err)
+    stockName.value = stockCode
+  }
+
+  // ✅ 게시글 데이터 로딩
   const stored = localStorage.getItem(`post_${stockCode}_${postId}`)
   if (stored) {
     post.value = JSON.parse(stored)
@@ -106,7 +110,6 @@ const toggleLike = (index) => {
   const username = localStorage.getItem('username')
   const c = comments.value[index]
   if (!username || !c) return
-
   const liked = c.likedBy.includes(username)
   if (liked) {
     c.likedBy = c.likedBy.filter(u => u !== username)
@@ -121,7 +124,6 @@ const toggleDislike = (index) => {
   const username = localStorage.getItem('username')
   const c = comments.value[index]
   if (!username || !c) return
-
   const disliked = c.dislikedBy.includes(username)
   if (disliked) {
     c.dislikedBy = c.dislikedBy.filter(u => u !== username)
@@ -146,6 +148,7 @@ const deletePost = () => {
   router.push(`/community/${stockCode}`)
 }
 </script>
+
 
 <style scoped>
 .post-detail {
@@ -216,9 +219,8 @@ h3 {
   border-radius: 4px;
   transition: background-color 0.2s;
 }
-
 .comment-actions button:hover {
-  background-color: #f0f0f0; /* 마우스 오버시 배경색 */
+  background-color: #f0f0f0;
 }
 .comment-input-container {
   display: flex;
@@ -226,7 +228,6 @@ h3 {
   gap: 10px;
   align-items: center;
 }
-
 .comments input {
   padding: 8px 10px;
   flex-grow: 1;
@@ -234,20 +235,18 @@ h3 {
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-
 .comment-submit-btn {
   padding: 8px 15px;
-  background-color: #007bff; /* 파란색 배경 */
-  color: white; /* 흰색 텍스트 */
+  background-color: #007bff;
+  color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
   min-width: 80px;
 }
-
 .comment-submit-btn:hover {
-  background-color: #0056b3; /* 마우스 오버시 더 진한 파란색 */
+  background-color: #0056b3;
 }
 .delete-box {
   margin: 20px 0;
