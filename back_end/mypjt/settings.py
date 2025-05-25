@@ -16,8 +16,8 @@ FSS_API_KEY = env("FSS_API_KEY")
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
+    'accounts',  # accounts 앱을 가장 먼저 배치
     'boards',
-    'accounts',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'social_django',  # 소셜 로그인 앱
     'corsheaders',    # CORS 미들웨어 추가
+    'rest_framework', # Django REST Framework
+    'rest_framework.authtoken', # 토큰 인증
 ]
 
 MIDDLEWARE = [
@@ -110,3 +112,26 @@ LOGIN_REDIRECT_URL = '/'
 print("✅ GOOGLE_CLIENT_ID =", env("GOOGLE_CLIENT_ID"))
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# REST Framework 설정
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}

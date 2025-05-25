@@ -1,7 +1,7 @@
 // 인증 관련 API 서비스
 
 // 백엔드 API 기본 URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
  * 회원가입 함수
@@ -9,41 +9,68 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
  * @returns {Promise} API 응답 Promise
  */
 export const signup = async (userData) => {
-  try {
-    // 실제 API 연결 - 현재는 주석 처리
-    // const response = await fetch(`${API_URL}/signup/`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(userData)
-    // });
-    
-    // if (!response.ok) {
-    //   const errorData = await response.json();
-    //   throw new Error(errorData.message || '회원가입 처리 중 오류가 발생했습니다.');
-    // }
-    // return await response.json();
-    
-    // 임시 로컬 스토리지 구현
-    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    
-    // 아이디 중복 검사
-    if (existingUsers.some(user => user.username === userData.username)) {
-      throw new Error('이미 사용 중인 아이디입니다.');
+  try {    // 백엔드 연결 상태 확인
+    let isBackendConnected = false;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 500);
+      
+      const checkResponse = await fetch(`${API_URL}/accounts/api/signup/`, {
+        method: 'HEAD',
+        signal: controller.signal
+      }).catch(() => null);
+      
+      clearTimeout(timeoutId);
+      isBackendConnected = checkResponse && checkResponse.ok;
+      console.log('백엔드 연결 상태:', isBackendConnected ? '연결됨' : '연결 안됨');
+    } catch (checkError) {
+      console.log('백엔드 연결 확인 실패:', checkError);
+      isBackendConnected = false;
     }
     
-    // 새 사용자 추가
-    existingUsers.push({...userData});
-    
-    // 저장
-    localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
-    
-    return { 
-      success: true, 
-      message: '회원가입이 완료되었습니다.' 
-    };
-    
+    if (isBackendConnected) {
+      console.log('백엔드 서버로 회원가입 요청 전송');
+      
+      // REST API 엔드포인트 사용
+      const response = await fetch(`${API_URL}/accounts/api/signup/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || '회원가입 처리 중 오류가 발생했습니다.');
+      }
+      
+      return { 
+        success: true, 
+        message: '회원가입이 완료되었습니다.' 
+      };
+    } else {
+      console.log('백엔드 연결 불가, 로컬 스토리지 회원가입 사용');
+      
+      // 임시 로컬 스토리지 구현 (백업용)
+      const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      
+      // 아이디 중복 검사
+      if (existingUsers.some(user => user.username === userData.username)) {
+        throw new Error('이미 사용 중인 아이디입니다.');
+      }
+      
+      // 새 사용자 추가
+      existingUsers.push({...userData});
+        // 저장
+      localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+        
+      return { 
+        success: true, 
+        message: '회원가입이 완료되었습니다. (로컬 저장)' 
+      };
+    }
   } catch (error) {
     console.error('회원가입 오류:', error);
     throw error;
@@ -60,13 +87,12 @@ export const login = async (username, password) => {
   try {
     // 현재 상태에서 백엔드 서버 연결 여부 확인 - 짧은 타임아웃으로 설정
     let isBackendConnected = false;
-    
-    try {
+      try {
       // 백엔드 연결 상태 확인 (타임아웃 단축: 500ms)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 500);
       
-      const checkResponse = await fetch(`${API_URL}/accounts/login/`, {
+      const checkResponse = await fetch(`${API_URL}/accounts/api/login/`, {
         method: 'HEAD',
         signal: controller.signal
       }).catch(() => null);
@@ -84,7 +110,7 @@ export const login = async (username, password) => {
     if (isBackendConnected) {
       console.log('백엔드 서버로 로그인 요청 전송');
       
-      const response = await fetch(`${API_URL}/accounts/login/`, {
+      const response = await fetch(`${API_URL}/accounts/api/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,0 +1,149 @@
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from rest_framework.authtoken.models import Token
+from .forms import CustomUserCreationForm
+
+User = get_user_model()
+
+@api_view(['POST', 'HEAD', 'OPTIONS', 'GET'])
+@permission_classes([AllowAny])
+def api_signup(request):
+    """
+    API 엔드포인트: 회원가입
+    프론트엔드에서 JSON 형식으로 사용자 데이터를 받아 처리합니다.
+    HEAD 메서드도 허용하여 프론트엔드에서 연결 확인 가능하도록 함
+    """
+    # HEAD 또는 GET 메서드 처리 - 연결 테스트를 위함
+    if request.method in ['HEAD', 'GET']:
+        return Response({"message": "API 엔드포인트가 활성화되었습니다."}, status=200)
+    
+    # OPTIONS 메서드 처리 - CORS 프리플라이트 요청용
+    if request.method == 'OPTIONS':
+        return Response(status=200)
+    
+    try:
+        # 요청 데이터 출력 (디버깅용)
+        print("Received signup data:", request.data)
+        
+        # 필수 필드 확인
+        required_fields = ['username', 'password', 'name']
+        for field in required_fields:
+            if field not in request.data or not request.data[field]:
+                return Response({
+                    'success': False,
+                    'message': f'{field} 필드는 필수입니다.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 사용자가 이미 존재하는지 확인
+        if User.objects.filter(username=request.data['username']).exists():
+            return Response({
+                'success': False,
+                'message': '이미 사용 중인 아이디입니다.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 사용자 직접 생성
+        user = User.objects.create_user(
+            username=request.data['username'],
+            password=request.data['password'],  # 자동으로 해시됨
+            email=request.data.get('email', ''),
+            first_name=request.data.get('name', '')
+        )
+        
+        # 추가 정보가 있으면 저장
+        # 참고: AbstractUser 모델에는 birth, gender, nationality 필드가 없으므로
+        # 이런 추가 필드는 User 모델을 확장하여 저장해야 하지만, 지금은 생략
+        
+        # 사용자 정보에서 비밀번호 제외 (보안)
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'name': user.first_name
+        }
+        
+        # 토큰 생성
+        token, created = Token.objects.get_or_create(user=user)
+        
+        return Response({
+            'success': True,
+            'message': '회원가입이 완료되었습니다.',
+            'user': user_data,
+            'token': token.key
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        print(f"회원가입 오류: {str(e)}")
+        return Response({
+            'success': False,
+            'message': f'서버 오류: {str(e)}',
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST', 'HEAD', 'OPTIONS', 'GET'])
+@permission_classes([AllowAny])
+def api_login(request):
+    """
+    API 엔드포인트: 로그인
+    """
+    # HEAD 또는 GET 메서드 처리 - 연결 테스트를 위함
+    if request.method in ['HEAD', 'GET']:
+        return Response({"message": "로그인 API 엔드포인트가 활성화되었습니다."}, status=200)
+    
+    # OPTIONS 메서드 처리 - CORS 프리플라이트 요청용
+    if request.method == 'OPTIONS':
+        return Response(status=200)
+    
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    # 디버깅 로그
+    print(f"Login attempt for username: {username}")
+    
+    if not username or not password:
+        return Response({
+            'success': False,
+            'message': '아이디와 비밀번호를 모두 입력해주세요.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user = User.objects.get(username=username)
+        
+        # 비밀번호 확인
+        if not user.check_password(password):
+            return Response({
+                'success': False,
+                'message': '아이디 또는 비밀번호가 일치하지 않습니다.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # 토큰 생성 또는 가져오기
+        token, created = Token.objects.get_or_create(user=user)
+        
+        # 사용자 정보에서 비밀번호 제외
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name
+        }
+        
+        return Response({
+            'success': True,
+            'message': '로그인이 완료되었습니다.',
+            'user': user_data,
+            'token': token.key
+        }, status=status.HTTP_200_OK)
+            
+    except User.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': '아이디 또는 비밀번호가 일치하지 않습니다.'
+        }, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'서버 오류: {str(e)}',
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

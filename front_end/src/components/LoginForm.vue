@@ -28,33 +28,23 @@ const handleLogin = async () => {
 
   isLoading.value = true
   try {
-    // 로그인 처리 전 사용자 입력 확인 - 로컬 스토리지에서 사용자 확인
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
-    const foundUser = registeredUsers.find(u => u.username === username.value)
+    // 서버 API를 통해 로그인 처리
+    console.log('로그인 시도:', username.value)
+    const result = await login(username.value, password.value)
     
-    if (!foundUser) {
-      throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.')
-    }
-    
-    if (foundUser.password !== password.value) {
-      throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.')
-    }
-    
-    // 로그인 성공 메시지 즉시 표시 후 비동기 처리 진행
+    // 로그인 성공 메시지 표시
     alert('로그인 성공!')
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('username', username.value)
     }
-    
-    // URL에서 redirect 쿼리 파라미터 확인
+      // URL에서 redirect 쿼리 파라미터 확인
     const redirect = router.currentRoute.value.query.redirect
     
-    // 실제 로그인 처리 (토큰 저장 등) - 백그라운드에서 진행
-    const result = await login(username.value, password.value)
+    // 로그인 결과 확인
     console.log('로그인 성공 결과:', result)
     
-    // 로컬 스토리지 확인
+    // 로컬 스토리지 확인 (서버에서 저장된 토큰과 사용자 데이터)
     console.log('인증 토큰 존재:', !!localStorage.getItem('token'))
     console.log('사용자 데이터 존재:', !!localStorage.getItem('user'))
     
