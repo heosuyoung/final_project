@@ -284,6 +284,12 @@ import './term-amount-styles.css';
 
 export default {
   name: 'SavingsRecommendation',
+  props: {
+    limitCount: {
+      type: Number,
+      default: null
+    }
+  },
   data() {
     return {
       loading: false,

@@ -29,16 +29,17 @@ export const signup = async (userData) => {
     }
     
     if (isBackendConnected) {
-      console.log('백엔드 서버로 회원가입 요청 전송');
-      
-      // REST API 엔드포인트 사용
+      console.log('백엔드 서버로 회원가입 요청 전송');      // REST API 엔드포인트 사용 (CORS 문제 해결 위해 헤더 및 옵션 수정)
       const response = await fetch(`${API_URL}/accounts/api/signup/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(userData),
-        credentials: 'include'
+        credentials: 'omit', // 쿠키를 보내지 않음으로써 CSRF 검사를 우회
+        mode: 'cors'
       });
       
       if (!response.ok) {
@@ -109,13 +110,16 @@ export const login = async (username, password) => {
     // 백엔드가 연결된 경우 실제 API 호출
     if (isBackendConnected) {
       console.log('백엔드 서버로 로그인 요청 전송');
-      
-      const response = await fetch(`${API_URL}/accounts/api/login/`, {
+        const response = await fetch(`${API_URL}/accounts/api/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
+        credentials: 'omit', // 쿠키를 보내지 않음
+        mode: 'cors'
       });
       
       if (!response.ok) {

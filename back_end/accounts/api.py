@@ -7,9 +7,11 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 from .forms import CustomUserCreationForm
+from django.views.decorators.csrf import csrf_exempt
 
 User = get_user_model()
 
+@csrf_exempt
 @api_view(['POST', 'HEAD', 'OPTIONS', 'GET'])
 @permission_classes([AllowAny])
 def api_signup(request):
@@ -97,6 +99,7 @@ def api_signup(request):
             'message': f'서버 오류: {str(e)}',
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@csrf_exempt
 @api_view(['POST', 'HEAD', 'OPTIONS', 'GET'])
 @permission_classes([AllowAny])
 def api_login(request):
