@@ -123,12 +123,11 @@ const formatGender = (gender) => {
   const genderMap = {
     'M': '남자',
     'F': '여자',
-    'O': '기타',
     'male': '남자',
     'female': '여자'
   }
   
-  return genderMap[gender] || '기타'
+  return genderMap[gender] || '등록된 성별이 없습니다.'
 }
 
 const fetchUserProfile = async () => {
@@ -188,7 +187,23 @@ const fetchUserProfile = async () => {
 
 // 편집 모드 시작
 const startEdit = () => {
+  // 사용자 정보 복사
   editForm.value = { ...user.value }
+  
+  // 백엔드 성별 형식(M, F)을 프론트엔드 형식(male, female)으로 변환
+  if (user.value.gender === 'M') {
+    editForm.value.gender = 'male'
+  } else if (user.value.gender === 'F') {
+    editForm.value.gender = 'female'
+  } else {
+    editForm.value.gender = 'male' // 기본값
+  }
+  
+  // 생년월일 필드명 변환 (birth_date -> birth)
+  if (user.value.birth_date) {
+    editForm.value.birth = user.value.birth_date
+  }
+  
   isEditing.value = true
 }
 
@@ -221,10 +236,18 @@ const saveChanges = async () => {
   }
   
   isLoading.value = true
-  
-  try {
+    try {
+    // 백엔드 형식에 맞게 데이터 변환
+    const profileData = {
+      ...editForm.value,
+      // birth 필드를 birth_date로 변환
+      birth_date: editForm.value.birth,
+      // gender 필드를 백엔드 형식(M/F)으로 변환
+      gender: editForm.value.gender === 'male' ? 'M' : 'F'
+    }
+    
     // 프로필 업데이트 요청
-    const updatedProfile = await updateUserProfile(editForm.value)
+    const updatedProfile = await updateUserProfile(profileData)
     user.value = updatedProfile
     isEditing.value = false
     

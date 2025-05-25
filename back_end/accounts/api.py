@@ -52,22 +52,17 @@ def api_signup(request):
             email=request.data.get('email', ''),
             first_name=request.data.get('name', '')
         )
-        
-        # 추가 정보 저장
+          # 추가 정보 저장
         if 'birth' in request.data:
             user.birth_date = request.data['birth']
         
         if 'gender' in request.data:
             # 성별 매핑 (프론트엔드 값을 백엔드 값으로 변환)
             gender_mapping = {
-                '남자': 'M',
-                '여자': 'F',
-                '기타': 'O',
-                'M': 'M',
-                'F': 'F',
-                'O': 'O'
+                'male': 'M',  # 남자
+                'female': 'F',  # 여자
             }
-            user.gender = gender_mapping.get(request.data['gender'], 'O')
+            user.gender = gender_mapping.get(request.data['gender'], 'M')
             
         if 'nationality' in request.data:
             user.nationality = request.data['nationality']
