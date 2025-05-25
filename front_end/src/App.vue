@@ -2,7 +2,6 @@
 import { useRoute } from 'vue-router'
 import Header from './components/Header.vue'
 import MainSection from './components/MainSection.vue'
-import StockComparisonSection from './components/StockComparisonSection.vue'
 import AutoInvestmentSection from './components/AutoInvestmentSection.vue'
 
 const route = useRoute()
@@ -14,7 +13,6 @@ const route = useRoute()
     <main :class="{ 'signup-main': route.path === '/signup' || route.path === '/login' || route.path === '/profile'}">
       <router-view />
       <template v-if="route.path === '/'">
-        <StockComparisonSection />
         <AutoInvestmentSection />
       </template>
     </main>

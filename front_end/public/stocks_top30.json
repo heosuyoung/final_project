@@ -1,0 +1,272 @@
+[
+  {
+    "name": "삼성전자",
+    "code": "005930",
+    "price": "54200",
+    "changeRate": "11,240,044",
+    "marketCap": "3,208,444",
+    "volume": "10.50",
+    "isFavorite": false
+  },
+  {
+    "name": "SK하이닉스",
+    "code": "000660",
+    "price": "200000",
+    "changeRate": "1,433,493",
+    "marketCap": "1,456,005",
+    "volume": "5.61",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성바이오로직스",
+    "code": "207940",
+    "price": "1016000",
+    "changeRate": "108,587",
+    "marketCap": "723,128",
+    "volume": "56.52",
+    "isFavorite": false
+  },
+  {
+    "name": "LG에너지솔루션",
+    "code": "373220",
+    "price": "268000",
+    "changeRate": "213,740",
+    "marketCap": "627,120",
+    "volume": "-53.88",
+    "isFavorite": false
+  },
+  {
+    "name": "한화에어로스페이스",
+    "code": "012450",
+    "price": "830000",
+    "changeRate": "136,055",
+    "marketCap": "392,558",
+    "volume": "16.79",
+    "isFavorite": false
+  },
+  {
+    "name": "KB금융",
+    "code": "105560",
+    "price": "99000",
+    "changeRate": "890,409",
+    "marketCap": "389,593",
+    "volume": "7.79",
+    "isFavorite": false
+  },
+  {
+    "name": "현대차",
+    "code": "005380",
+    "price": "179900",
+    "changeRate": "822,020",
+    "marketCap": "368,359",
+    "volume": "3.92",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성전자우",
+    "code": "005935",
+    "price": "44900",
+    "changeRate": "1,034,016",
+    "marketCap": "366,373",
+    "volume": "8.70",
+    "isFavorite": false
+  },
+  {
+    "name": "기아",
+    "code": "000270",
+    "price": "87100",
+    "changeRate": "879,529",
+    "marketCap": "346,373",
+    "volume": "3.57",
+    "isFavorite": false
+  },
+  {
+    "name": "HD현대중공업",
+    "code": "329180",
+    "price": "389000",
+    "changeRate": "119,108",
+    "marketCap": "345,327",
+    "volume": "39.37",
+    "isFavorite": false
+  },
+  {
+    "name": "셀트리온",
+    "code": "068270",
+    "price": "152700",
+    "changeRate": "398,151",
+    "marketCap": "340,544",
+    "volume": "68.05",
+    "isFavorite": false
+  },
+  {
+    "name": "NAVER",
+    "code": "035420",
+    "price": "183100",
+    "changeRate": "257,074",
+    "marketCap": "290,098",
+    "volume": "15.99",
+    "isFavorite": false
+  },
+  {
+    "name": "신한지주",
+    "code": "055550",
+    "price": "55100",
+    "changeRate": "1,073,338",
+    "marketCap": "273,209",
+    "volume": "6.30",
+    "isFavorite": false
+  },
+  {
+    "name": "두산에너빌리티",
+    "code": "034020",
+    "price": "40800",
+    "changeRate": "16,382,809",
+    "marketCap": "261,349",
+    "volume": "-256.60",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성물산",
+    "code": "028260",
+    "price": "142000",
+    "changeRate": "782,665",
+    "marketCap": "241,367",
+    "volume": "11.56",
+    "isFavorite": false
+  },
+  {
+    "name": "한화오션",
+    "code": "042660",
+    "price": "76000",
+    "changeRate": "1,394,220",
+    "marketCap": "232,874",
+    "volume": "33.61",
+    "isFavorite": false
+  },
+  {
+    "name": "HMM",
+    "code": "011200",
+    "price": "22200",
+    "changeRate": "1,002,424",
+    "marketCap": "227,559",
+    "volume": "4.38",
+    "isFavorite": false
+  },
+  {
+    "name": "현대모비스",
+    "code": "012330",
+    "price": "242000",
+    "changeRate": "103,469",
+    "marketCap": "225,048",
+    "volume": "5.33",
+    "isFavorite": false
+  },
+  {
+    "name": "HD한국조선해양",
+    "code": "009540",
+    "price": "288500",
+    "changeRate": "131,668",
+    "marketCap": "204,180",
+    "volume": "13.81",
+    "isFavorite": false
+  },
+  {
+    "name": "하나금융지주",
+    "code": "086790",
+    "price": "68700",
+    "changeRate": "641,221",
+    "marketCap": "197,334",
+    "volume": "5.34",
+    "isFavorite": false
+  },
+  {
+    "name": "한국전력",
+    "code": "015760",
+    "price": "30700",
+    "changeRate": "3,466,964",
+    "marketCap": "197,083",
+    "volume": "5.64",
+    "isFavorite": false
+  },
+  {
+    "name": "메리츠금융지주",
+    "code": "138040",
+    "price": "109200",
+    "changeRate": "217,915",
+    "marketCap": "196,576",
+    "volume": "9.18",
+    "isFavorite": false
+  },
+  {
+    "name": "POSCO홀딩스",
+    "code": "005490",
+    "price": "233500",
+    "changeRate": "180,700",
+    "marketCap": "188,978",
+    "volume": "17.86",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성생명",
+    "code": "032830",
+    "price": "92000",
+    "changeRate": "255,393",
+    "marketCap": "184,000",
+    "volume": "8.73",
+    "isFavorite": false
+  },
+  {
+    "name": "크래프톤",
+    "code": "259960",
+    "price": "379500",
+    "changeRate": "79,591",
+    "marketCap": "181,850",
+    "volume": "13.97",
+    "isFavorite": false
+  },
+  {
+    "name": "삼성화재",
+    "code": "000810",
+    "price": "380000",
+    "changeRate": "99,171",
+    "marketCap": "174,842",
+    "volume": "9.27",
+    "isFavorite": false
+  },
+  {
+    "name": "카카오",
+    "code": "035720",
+    "price": "37400",
+    "changeRate": "956,143",
+    "marketCap": "165,200",
+    "volume": "301.61",
+    "isFavorite": false
+  },
+  {
+    "name": "고려아연",
+    "code": "010130",
+    "price": "778000",
+    "changeRate": "11,378",
+    "marketCap": "161,072",
+    "volume": "84.66",
+    "isFavorite": false
+  },
+  {
+    "name": "KT&G",
+    "code": "033780",
+    "price": "119400",
+    "changeRate": "113,853",
+    "marketCap": "145,743",
+    "volume": "13.44",
+    "isFavorite": false
+  },
+  {
+    "name": "HD현대일렉트릭",
+    "code": "267260",
+    "price": "386000",
+    "changeRate": "158,069",
+    "marketCap": "139,142",
+    "volume": "24.77",
+    "isFavorite": false
+  }
+]

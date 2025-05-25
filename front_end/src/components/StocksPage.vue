@@ -1,6 +1,6 @@
 <template>
   <div class="stocks-page">
-    <h2>시가총액 상위 20 종목</h2>
+    <h2>시가총액 상위 30 종목</h2>
     <table class="stock-table">
       <thead>
         <tr>
@@ -36,23 +36,50 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import stocksData from '../assets/stocks_top50.json'
+import axios from 'axios'
 
 const stocks = ref([])
 
-onMounted(() => {
-  stocks.value = stocksData
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/stocks')  // 프록시 설정 기준
+    const data = res.data
+
+    if (!Array.isArray(data)) {
+      console.error('응답 데이터가 배열이 아닙니다:', data)
+      return
+    }
+
+    const savedFavorites = JSON.parse(localStorage.getItem('favorite_stocks') || '[]')
+
+    stocks.value = data.map(stock => ({
+      ...stock,
+      isFavorite: savedFavorites.some(f => f.code === stock.code)
+    }))
+  } catch (e) {
+    console.error('주식 데이터 로드 실패:', e)
+  }
 })
 
 const toggleFavorite = (stock) => {
   stock.isFavorite = !stock.isFavorite
+  let favs = JSON.parse(localStorage.getItem('favorite_stocks') || '[]')
+
+  if (stock.isFavorite) {
+    favs.push(stock)
+  } else {
+    favs = favs.filter(s => s.code !== stock.code)
+  }
+
+  localStorage.setItem('favorite_stocks', JSON.stringify(favs))
 }
 </script>
+
 
 <style scoped>
 .stocks-page {
   padding: 20px;
-   margin-top: 60px; /* ✅ 이거 추가! */
+  margin-top: 60px;
   font-family: 'Noto Sans KR', sans-serif;
 }
 

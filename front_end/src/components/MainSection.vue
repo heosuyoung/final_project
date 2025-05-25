@@ -14,13 +14,14 @@
         </div>
       </div>
     </div>
+
+    <!-- ✅ 관심 종목 슬라이드 추가 -->
+    <FavoriteSlide />
   </section>
 </template>
 
-<script>
-export default {
-  name: 'MainSection',
-};
+<script setup>
+import FavoriteSlide from './FavoriteSlide.vue'
 </script>
 
 <style scoped>
@@ -67,7 +68,8 @@ export default {
   gap: 0.2em;
 }
 
-.main-line1, .main-line2 {
+.main-line1,
+.main-line2 {
   font-size: 3.5rem;
   font-weight: 700;
   color: #222;
@@ -120,7 +122,8 @@ export default {
     width: 400px;
     height: 400px;
   }
-  .main-line1, .main-line2 {
+  .main-line1,
+  .main-line2 {
     font-size: 3rem;
   }
   .main-ease {
@@ -136,7 +139,8 @@ export default {
     width: 300px;
     height: 300px;
   }
-  .main-line1, .main-line2 {
+  .main-line1,
+  .main-line2 {
     font-size: 2.5rem;
   }
   .main-ease {
@@ -148,7 +152,9 @@ export default {
   .main-row {
     flex-direction: column;
     gap: 2rem;
-  }  .main-left, .main-right {
+  }
+  .main-left,
+  .main-right {
     width: 100%;
     justify-content: center;
     align-items: center;
@@ -158,7 +164,8 @@ export default {
   .main-text-group {
     align-items: center;
   }
-  .main-line1, .main-line2 {
+  .main-line1,
+  .main-line2 {
     font-size: 2rem;
     text-align: center;
   }
@@ -173,7 +180,8 @@ export default {
 }
 
 @media (max-width: 600px) {
-  .main-line1, .main-line2 {
+  .main-line1,
+  .main-line2 {
     font-size: 1.5rem;
   }
   .main-ease {
@@ -184,4 +192,4 @@ export default {
     height: 150px;
   }
 }
-</style> 
+</style>
