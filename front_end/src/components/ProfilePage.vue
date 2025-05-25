@@ -29,14 +29,13 @@
       </div>
       <div v-else>
         <!-- 보기 모드 -->
-        <div v-if="!isEditing" class="profile-info">
-          <div class="info-row">
+        <div v-if="!isEditing" class="profile-info">          <div class="info-row">
             <span class="label">아이디:</span>
             <span class="value">{{ user.username }}</span>
           </div>
           <div class="info-row">
             <span class="label">이름:</span>
-            <span class="value">{{ user.name }}</span>
+            <span class="value">{{ user.first_name || user.name }}</span>
           </div>
           <div class="info-row">
             <span class="label">이메일:</span>
@@ -44,11 +43,11 @@
           </div>
           <div class="info-row">
             <span class="label">생년월일:</span>
-            <span class="value">{{ formatBirthDate(user.birth) }}</span>
+            <span class="value">{{ formatBirthDate(user.birth_date || user.birth) }}</span>
           </div>
           <div class="info-row">
             <span class="label">성별:</span>
-            <span class="value">{{ user.gender === 'male' ? '남자' : '여자' }}</span>
+            <span class="value">{{ formatGender(user.gender) }}</span>
           </div>
         
           <button class="edit-btn" @click="startEdit">프로필 수정</button>
@@ -114,6 +113,22 @@ const formatBirthDate = (birthDate) => {
   const day = birthDate.substring(6, 8)
   
   return `${year}년 ${month}월 ${day}일`
+}
+
+// 성별 포맷팅 함수 추가
+const formatGender = (gender) => {
+  if (!gender) return '등록된 성별이 없습니다.'
+  
+  // 백엔드 값을 프론트엔드 표시용으로 변환
+  const genderMap = {
+    'M': '남자',
+    'F': '여자',
+    'O': '기타',
+    'male': '남자',
+    'female': '여자'
+  }
+  
+  return genderMap[gender] || '기타'
 }
 
 const fetchUserProfile = async () => {

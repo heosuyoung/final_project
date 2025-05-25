@@ -45,8 +45,7 @@ def api_signup(request):
                 'success': False,
                 'message': '이미 사용 중인 아이디입니다.'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # 사용자 직접 생성
+          # 사용자 직접 생성
         user = User.objects.create_user(
             username=request.data['username'],
             password=request.data['password'],  # 자동으로 해시됨
@@ -54,16 +53,36 @@ def api_signup(request):
             first_name=request.data.get('name', '')
         )
         
-        # 추가 정보가 있으면 저장
-        # 참고: AbstractUser 모델에는 birth, gender, nationality 필드가 없으므로
-        # 이런 추가 필드는 User 모델을 확장하여 저장해야 하지만, 지금은 생략
+        # 추가 정보 저장
+        if 'birth' in request.data:
+            user.birth_date = request.data['birth']
         
-        # 사용자 정보에서 비밀번호 제외 (보안)
+        if 'gender' in request.data:
+            # 성별 매핑 (프론트엔드 값을 백엔드 값으로 변환)
+            gender_mapping = {
+                '남자': 'M',
+                '여자': 'F',
+                '기타': 'O',
+                'M': 'M',
+                'F': 'F',
+                'O': 'O'
+            }
+            user.gender = gender_mapping.get(request.data['gender'], 'O')
+            
+        if 'nationality' in request.data:
+            user.nationality = request.data['nationality']
+            
+        # 변경사항 저장
+        user.save()
+          # 사용자 정보에서 비밀번호 제외 (보안)
         user_data = {
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'name': user.first_name
+            'name': user.first_name,
+            'birth_date': user.birth_date,
+            'gender': user.gender,
+            'nationality': user.nationality
         }
         
         # 토큰 생성
@@ -121,13 +140,15 @@ def api_login(request):
         
         # 토큰 생성 또는 가져오기
         token, created = Token.objects.get_or_create(user=user)
-        
-        # 사용자 정보에서 비밀번호 제외
+          # 사용자 정보에서 비밀번호 제외
         user_data = {
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'first_name': user.first_name
+            'first_name': user.first_name,
+            'birth_date': user.birth_date,
+            'gender': user.gender,
+            'nationality': user.nationality
         }
         
         return Response({
