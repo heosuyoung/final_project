@@ -13,6 +13,7 @@ import StockCommunity from '@/components/StockCommunity.vue'
 import WritePost from '@/components/WritePost.vue'
 import PostDetail from '@/components/PostDetail.vue'
 import UserProfile from '../components/UserProfile.vue'
+import OAuthCallback from '../components/OAuthCallback.vue'
 
 const routes = [
   { path: '/', component: MainSection },
@@ -26,7 +27,8 @@ const routes = [
   { path: '/community/:code', component: StockCommunity },
   { path: '/community/:code/write', component: WritePost },
   { path: '/community/:code/:postId', component: PostDetail },
-  { path: '/user/:username', component: UserProfile }  // ✅ 하나만 남기기
+  { path: '/user/:username', component: UserProfile },  // ✅ 하나만 남기기
+  { path: '/oauth/callback', component: OAuthCallback }  // 소셜 로그인 콜백 경로 추가
 ]
 
 

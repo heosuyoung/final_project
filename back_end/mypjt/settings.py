@@ -99,17 +99,76 @@ AUTH_USER_MODEL = 'accounts.User'
 
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.kakao.KakaoOAuth2',  # 카카오 로그인 추가
     'django.contrib.auth.backends.ModelBackend',
 )
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("GOOGLE_CLIENT_ID")
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_CLIENT_SECRET")
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
 
-LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/'
+# 카카오 로그인 설정
+SOCIAL_AUTH_KAKAO_KEY = env("SOCIAL_AUTH_KAKAO_KEY")
+SOCIAL_AUTH_KAKAO_SECRET = env("SOCIAL_AUTH_KAKAO_SECRET", default="")
+# 카카오 관련 추가 설정
+SOCIAL_AUTH_KAKAO_EXTRA_DATA = ['nickname', 'profile_image']
+
+# 소셜 로그인 관련 설정
+LOGIN_REDIRECT_URL = 'http://localhost:5173/oauth/callback'
+LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
+
+# 소셜 로그인 콜백 설정
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'http://localhost:5173/oauth/callback'
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
+# 카카오 특정 리다이렉트 URL 설정
+SOCIAL_AUTH_KAKAO_LOGIN_REDIRECT_URL = 'http://localhost:5173/oauth/callback'
+
+# Google OAuth 추가 설정
+SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
+    'access_type': 'offline',
+    'approval_prompt': 'force'
+}
+
+# 카카오 로그인 추가 설정 - 필수 스코프만 사용 (권한 오류 방지)
+SOCIAL_AUTH_KAKAO_SCOPE = ['profile_nickname', 'profile_image']
+SOCIAL_AUTH_KAKAO_PROFILE_EXTRA_PARAMS = {  
+    'fields': 'id, name, picture'
+}
+
+# 카카오 로그인 응답 처리 설정
+SOCIAL_AUTH_KAKAO_AUTH_EXTRA_ARGUMENTS = {'prompt': 'login'}
+
+# 커스텀 함수 설정
+SOCIAL_AUTH_KAKAO_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+    'accounts.social_pipeline.create_user_token',
+)
+
+# 소셜 로그인 파이프라인 설정
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.social_auth.associate_by_email',  # 이메일로 기존 계정과 연동
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+    'accounts.social_pipeline.create_user_token',  # 사용자 토큰 생성 커스텀 파이프라인
+)
 
 # 디버깅 확인용 출력
-print("✅ GOOGLE_CLIENT_ID =", env("GOOGLE_CLIENT_ID"))
+print("✅ GOOGLE_CLIENT_ID =", env("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY"))
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
