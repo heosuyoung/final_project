@@ -1,12 +1,12 @@
 <template>
   <div class="write-post">
-    <h2>{{ stockName }} - 글 작성</h2>
-
-    <div class="form-box">
+    <h2>{{ stockName }} - 글 작성</h2>    <div class="form-box">
       <input v-model="title" placeholder="제목을 입력하세요" />
       <textarea v-model="content" placeholder="내용을 입력하세요"></textarea>
-      <button @click="submitPost">등록</button>
-      <button @click="cancel">취소</button>
+      <div class="button-container">
+        <button @click="submitPost">등록</button>
+        <button @click="cancel" class="cancel-btn">취소</button>
+      </div>
     </div>
   </div>
 </template>
@@ -98,5 +98,29 @@ button {
   width: 100px;
   padding: 8px;
   font-size: 14px;
+  background-color: #007bff; /* 파란색 배경 */
+  color: white; /* 흰색 텍스트 */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+button:hover {
+  background-color: #0056b3; /* 마우스 오버시 더 진한 파란색 */
+}
+
+.cancel-btn {
+  background-color: #6c757d; /* 회색 배경 */
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268; /* 마우스 오버시 더 진한 회색 */
+}
+
+.button-container {
+  display: flex;
+  margin-top: 10px;
 }
 </style>

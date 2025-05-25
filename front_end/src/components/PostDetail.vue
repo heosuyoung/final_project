@@ -31,11 +31,9 @@
       </template>
       <template v-else>
         <p>아직 댓글이 없습니다.</p>
-      </template>
-
-      <div v-if="isLoggedIn">
+      </template>      <div v-if="isLoggedIn" class="comment-input-container">
         <input v-model="newComment" placeholder="댓글 입력..." />
-        <button @click="addComment">작성</button>
+        <button @click="addComment" class="comment-submit-btn">작성</button>
       </div>
       <p v-else>댓글 작성을 하려면 로그인하세요.</p>
     </div>
@@ -214,16 +212,42 @@ h3 {
   background: none;
   border: none;
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 }
+
+.comment-actions button:hover {
+  background-color: #f0f0f0; /* 마우스 오버시 배경색 */
+}
+.comment-input-container {
+  display: flex;
+  margin-top: 15px;
+  gap: 10px;
+  align-items: center;
+}
+
 .comments input {
-  margin-top: 10px;
-  padding: 6px;
-  width: 80%;
+  padding: 8px 10px;
+  flex-grow: 1;
   font-size: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
-.comments button {
-  margin-left: 10px;
-  padding: 6px 10px;
+
+.comment-submit-btn {
+  padding: 8px 15px;
+  background-color: #007bff; /* 파란색 배경 */
+  color: white; /* 흰색 텍스트 */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  min-width: 80px;
+}
+
+.comment-submit-btn:hover {
+  background-color: #0056b3; /* 마우스 오버시 더 진한 파란색 */
 }
 .delete-box {
   margin: 20px 0;
