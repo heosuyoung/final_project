@@ -172,8 +172,10 @@ const cancelForm = () => {
   border-radius: 15px;
   padding: 2rem;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
+  max-width: 650px;
+  width: 95%;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 h3 {
@@ -223,6 +225,7 @@ input, select, textarea {
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s;
+  box-sizing: border-box;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -232,18 +235,25 @@ input:focus, select:focus, textarea:focus {
 
 .input-with-unit {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .input-with-unit input {
-  padding-right: 3.5rem;
+  flex: 1;
+  padding-right: 1rem;
+  min-width: 0; /* flex 아이템에서 너비 문제 해결을 위한 설정 */
 }
 
 .unit {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
+  position: relative;
+  right: auto;
+  top: auto;
+  transform: none;
   color: #666;
+  margin-left: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .form-actions {
@@ -285,7 +295,8 @@ input:focus, select:focus, textarea:focus {
 
 @media (max-width: 576px) {
   .financial-data-form {
-    padding: 1.5rem;
+    padding: 1.5rem 1rem;
+    width: 100%;
   }
   
   .form-actions {
@@ -296,6 +307,19 @@ input:focus, select:focus, textarea:focus {
   .submit-button, .cancel-button {
     width: 100%;
     margin: 0;
+  }
+  
+  .form-group {
+    margin-bottom: 0.8rem;
+  }
+  
+  input, select, textarea {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+  }
+  
+  h4 {
+    font-size: 1.1rem;
   }
 }
 </style>

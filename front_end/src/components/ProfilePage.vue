@@ -1,96 +1,161 @@
-<template>
-  <div class="profile-container">
-    <div class="profile-card">
-      <div class="profile-header">
-        <div class="profile-avatar">
-          <img :src="profileImage" alt="프로필 사진" />
-          <div class="avatar-edit" v-if="!isEditing">
-            <button @click="toggleFileInput" class="avatar-edit-btn">
-              <span class="material-icons">photo_camera</span>
-            </button>
-            <input 
-              type="file" 
-              ref="fileInput" 
-              style="display: none" 
-              accept="image/*" 
-              @change="handleImageChange"
-            />
-          </div>
-        </div>
-        <h1>내 프로필</h1>
+<template>  <div class="profile-page">
+    <div class="page-header">
+      <div class="container">
+        <h1 class="page-title">내 프로필</h1>
+      </div>
+    </div>
+
+    <div class="container profile-content">
+      <div v-if="isLoading" class="loading-container">
+        <div class="spinner"></div>
+        <p>프로필 정보를 불러오는 중입니다...</p>
       </div>
       
-      <div v-if="isLoading" class="loading">
-        <div class="spinner"></div>
-        로딩 중...
+      <div v-else-if="error" class="error-container">
+        <div class="error-icon">!</div>
+        <p>{{ error }}</p>
       </div>
-      <div v-else-if="error" class="error">
-        {{ error }}
-      </div>
-      <div v-else>
-        <!-- 보기 모드 -->
-        <div v-if="!isEditing" class="profile-info">          <div class="info-row">
-            <span class="label">아이디:</span>
-            <span class="value">{{ user.username }}</span>
+      
+      <div v-else class="profile-grid">
+        <!-- 왼쪽: 프로필 카드 -->
+        <div class="profile-card">          <div class="profile-avatar-container">
+            <div class="profile-avatar">
+              <img v-if="hasProfileImage" :src="profileImage" alt="프로필 사진" />
+              <div v-else class="avatar-placeholder">
+                {{ userInitials }}
+              </div>
+              <div class="avatar-edit" v-if="!isEditing">
+                <button @click="toggleFileInput" class="avatar-edit-btn" title="프로필 사진 변경">
+                  <span class="material-icons">photo_camera</span>
+                </button>
+                <input 
+                  type="file" 
+                  ref="fileInput" 
+                  style="display: none" 
+                  accept="image/*" 
+                  @change="handleImageChange"
+                />
+              </div>
+            </div>
           </div>
-          <div class="info-row">
-            <span class="label">이름:</span>
-            <span class="value">{{ user.first_name || user.name }}</span>
+          <div class="profile-summary">
+            <h2 class="profile-name">{{ user.first_name || user.name || user.username }}</h2>
+            <p class="profile-username">@{{ user.username }}</p>
+            <p class="profile-email">{{ user.email || '이메일 미등록' }}</p>
           </div>
-          <div class="info-row">
-            <span class="label">이메일:</span>
-            <span class="value">{{ user.email || '등록된 이메일이 없습니다.' }}</span>
+          <div class="profile-stats">
+            <div class="stat-item">
+              <div class="stat-value">{{ getTotalInvestments() | 0 }}만원</div>
+              <div class="stat-label">총 투자금액</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ getFavoriteCount() | 0 }}</div>
+              <div class="stat-label">관심종목</div>
+            </div>
           </div>
-          <div class="info-row">
-            <span class="label">생년월일:</span>
-            <span class="value">{{ formatBirthDate(user.birth_date || user.birth) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">성별:</span>
-            <span class="value">{{ formatGender(user.gender) }}</span>
-          </div>
-        
-          <button class="edit-btn" @click="startEdit">프로필 수정</button>
         </div>
-        
-        <!-- 수정 모드 -->
-        <div v-else class="profile-edit-form">
-          <div class="form-group">
-            <label>이름:</label>
-            <input v-model="editForm.name" type="text" />
-            <span v-if="validationErrors.name" class="validation-error">{{ validationErrors.name }}</span>
-          </div>
-          <div class="form-group">
-            <label>이메일:</label>
-            <input v-model="editForm.email" type="email" />
-            <span v-if="validationErrors.email" class="validation-error">{{ validationErrors.email }}</span>
-          </div>
-          <div class="form-group">
-            <label>생년월일 (YYYYMMDD):</label>
-            <input v-model="editForm.birth" type="text" maxlength="8" />
-            <span v-if="validationErrors.birth" class="validation-error">{{ validationErrors.birth }}</span>
-          </div>
-          <div class="form-group">
-            <label>성별:</label>
-            <select v-model="editForm.gender">
-              <option value="male">남자</option>
-              <option value="female">여자</option>
-            </select>
+
+        <!-- 오른쪽: 정보 영역 -->
+        <div class="profile-details">
+          <div class="profile-section">
+            <h3 class="section-title">
+              <span class="section-icon material-icons">person</span>
+              계정 정보
+              <button v-if="!isEditing" @click="startEdit" class="edit-button">
+                <span class="material-icons">edit</span> 편집
+              </button>
+            </h3>
+
+            <!-- 보기 모드 -->
+            <div v-if="!isEditing" class="profile-info">
+              <div class="info-grid">
+                <div class="info-item">
+                  <div class="info-label">아이디</div>
+                  <div class="info-value">{{ user.username }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">이름</div>
+                  <div class="info-value">{{ user.first_name || user.name || '미등록' }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">이메일</div>
+                  <div class="info-value">{{ user.email || '미등록' }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">생년월일</div>
+                  <div class="info-value">{{ formatBirthDate(user.birth_date || user.birth) }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">성별</div>
+                  <div class="info-value">{{ formatGender(user.gender) }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">가입일</div>
+                  <div class="info-value">{{ formatJoinDate(user.date_joined) }}</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 수정 모드 -->
+            <div v-else class="profile-edit-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="name">이름</label>
+                  <input id="name" v-model="editForm.name" type="text" placeholder="이름을 입력하세요" />
+                  <span v-if="validationErrors.name" class="validation-error">{{ validationErrors.name }}</span>
+                </div>
+                <div class="form-group">
+                  <label for="email">이메일</label>
+                  <input id="email" v-model="editForm.email" type="email" placeholder="이메일을 입력하세요" />
+                  <span v-if="validationErrors.email" class="validation-error">{{ validationErrors.email }}</span>
+                </div>
+                <div class="form-group">
+                  <label for="birth">생년월일</label>
+                  <input id="birth" v-model="editForm.birth" type="text" maxlength="8" placeholder="YYYYMMDD" />
+                  <span v-if="validationErrors.birth" class="validation-error">{{ validationErrors.birth }}</span>
+                </div>
+                <div class="form-group">
+                  <label for="gender">성별</label>
+                  <select id="gender" v-model="editForm.gender">
+                    <option value="male">남자</option>
+                    <option value="female">여자</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="form-actions">
+                <button class="cancel-btn" @click="cancelEdit">취소</button>
+                <button class="save-btn" @click="saveChanges">
+                  <span class="material-icons">check</span> 저장하기
+                </button>
+              </div>
+            </div>
           </div>
           
-          <div class="edit-buttons">
-            <button class="save-btn" @click="saveChanges">저장</button>
-            <button class="cancel-btn" @click="cancelEdit">취소</button>
+          <div class="profile-section">
+            <h3 class="section-title">
+              <span class="section-icon material-icons">security</span>
+              계정 보안
+            </h3>
+            <div class="security-options">
+              <button class="option-btn" @click="changePassword">
+                <span class="material-icons">lock</span>
+                비밀번호 변경
+              </button>
+              <button class="option-btn" @click="logout">
+                <span class="material-icons">logout</span>
+                로그아웃
+              </button>
+            </div>
           </div>
         </div>
       </div>
-      <button class="logout-btn" @click="logout">로그아웃</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getUserProfile, updateUserProfile, logout as authLogout, isAuthenticated } from '../services/auth.js'
 
@@ -102,10 +167,23 @@ const isEditing = ref(false)
 const editForm = ref({})
 const validationErrors = ref({})
 const fileInput = ref(null)
-const profileImage = ref('/profile-default.jpg')  // 기본 프로필 이미지
+const profileImage = ref('https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png')  // 기본 프로필 이미지
 
+// 사용자 이니셜(첫 글자) 표시
+const userInitials = computed(() => {
+  const name = user.value.first_name || user.value.name || user.value.username || '';
+  if (!name) return '?';
+  return name.charAt(0).toUpperCase();
+})
+
+// 프로필 이미지가 있는지 확인
+const hasProfileImage = computed(() => {
+  return profileImage.value && profileImage.value !== 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
+})
+
+// 생년월일 포맷팅 함수
 const formatBirthDate = (birthDate) => {
-  if (!birthDate) return '등록된 생년월일이 없습니다.'
+  if (!birthDate) return '미등록'
   
   // 8자리 생년월일 포맷팅 (YYYYMMDD -> YYYY-MM-DD)
   const year = birthDate.substring(0, 4)
@@ -115,9 +193,9 @@ const formatBirthDate = (birthDate) => {
   return `${year}년 ${month}월 ${day}일`
 }
 
-// 성별 포맷팅 함수 추가
+// 성별 포맷팅 함수
 const formatGender = (gender) => {
-  if (!gender) return '등록된 성별이 없습니다.'
+  if (!gender) return '미등록'
   
   // 백엔드 값을 프론트엔드 표시용으로 변환
   const genderMap = {
@@ -127,7 +205,50 @@ const formatGender = (gender) => {
     'female': '여자'
   }
   
-  return genderMap[gender] || '등록된 성별이 없습니다.'
+  return genderMap[gender] || '미등록'
+}
+
+// 가입일 포맷팅 함수
+const formatJoinDate = (dateJoined) => {
+  if (!dateJoined) return '미등록'
+  
+  try {
+    const date = new Date(dateJoined)
+    return date.toLocaleDateString('ko-KR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+  } catch (e) {
+    return '미등록'
+  }
+}
+
+// 총 투자금액 계산 - 실제로는 백엔드에서 가져오는 것이 좋지만 예시로 구현
+const getTotalInvestments = () => {
+  // 로컬 스토리지에 저장된 투자 정보가 있는지 확인
+  try {
+    const investments = JSON.parse(localStorage.getItem('user_investments') || '{}')
+    return investments.total || 0
+  } catch (e) {
+    return 0
+  }
+}
+
+// 관심종목 개수 - 로컬 스토리지에서 가져오기
+const getFavoriteCount = () => {
+  try {
+    const favorites = JSON.parse(localStorage.getItem('favorite_stocks') || '[]')
+    return favorites.length
+  } catch (e) {
+    return 0
+  }
+}
+
+// 비밀번호 변경 함수
+const changePassword = () => {
+  // 현재 예시로만 구현 - 실제 비밀번호 변경 페이지로 라우팅
+  alert('비밀번호 변경 기능은 아직 개발 중입니다.')
 }
 
 const fetchUserProfile = async () => {
@@ -358,92 +479,88 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.profile-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 80vh;
-  padding: 2rem 0;
+/* 전체 페이지 스타일 */
+.profile-page {
+  background-color: #f8f9ff;
+  min-height: calc(100vh - 64px); /* 헤더 높이 제외 */
+  position: relative;
 }
 
-.profile-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 2.5rem 3rem;
-  width: 100%;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* 페이지 헤더 스타일 */
+.page-header {
+  background: linear-gradient(135deg, #007bff, #00bcd4);
+  padding: 3.5rem 0;
+  color: white;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin: 0;
   max-width: 600px;
 }
 
-.profile-header {
+/* 프로필 컨텐츠 레이아웃 */
+.profile-content {
+  margin-bottom: 3rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+}
+
+/* 로딩 및 에러 스타일 */
+.loading-container, .error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 2rem;
-}
-
-.profile-avatar {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-
-.profile-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-edit {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-}
-
-.avatar-edit-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-}
-
-.avatar-edit-btn:hover {
-  background: #0069d9;
-}
-
-h1 {
-  color: #007bff;
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
+  padding: 3rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
   text-align: center;
-}
-
-.loading, .error {
-  text-align: center;
-  padding: 2rem;
-  font-size: 1rem;
-  color: #666;
 }
 
 .spinner {
   border: 4px solid rgba(0, 123, 255, 0.1);
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border-left-color: #007bff;
   animation: spin 1s linear infinite;
-  margin: 0 auto;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
 }
 
 @keyframes spin {
@@ -451,54 +568,231 @@ h1 {
   100% { transform: rotate(360deg); }
 }
 
-.error {
+.error-container {
   color: #e74c3c;
 }
 
-.profile-info {
+.error-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #ffe0e0;
+  color: #e74c3c;
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+/* 프로필 카드 스타일 */
+.profile-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  padding: 2rem;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  text-align: center;
+  height: fit-content;
 }
 
-.info-row {
+.profile-avatar-container {
+  margin-bottom: 1.5rem;
+}
+
+.profile-avatar {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.15);
+  border: 5px solid #ffffff;
+  background-color: #f0f7ff;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #f0f7ff;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
-  padding: 0.8rem 0;
-  border-bottom: 1px solid #eee;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #4a90e2, #2e75cc);
+  color: white;
+  font-size: 3rem;
+  font-weight: 500;
 }
 
-.label {
-  flex: 0 0 100px;
-  font-weight: 600;
-  color: #555;
+.avatar-edit {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
 }
 
-.value {
-  flex: 1;
+.avatar-edit-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 123, 255, 0.9);
+  color: white;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-edit-btn:hover {
+  background: #0069d9;
+  transform: scale(1.05);
+}
+
+.profile-summary {
+  margin-bottom: 2rem;
+}
+
+.profile-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+  margin-bottom: 0.3rem;
   color: #333;
 }
 
-.edit-btn {
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.8rem;
-  width: 100%;
-  margin-top: 1.5rem;
+.profile-username {
   font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
+  color: #777;
+  margin: 0;
+  margin-bottom: 0.8rem;
 }
 
-.edit-btn:hover {
-  background: #0069d9;
+.profile-email {
+  font-size: 0.9rem;
+  color: #999;
+  margin: 0;
 }
 
-.profile-edit-form {
+.profile-stats {
+  display: flex;
+  width: 100%;
+  border-top: 1px solid #eee;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #007bff;
+  margin-bottom: 0.3rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+/* 프로필 상세 정보 스타일 */
+.profile-details {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 2rem;
+}
+
+.profile-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  padding: 2rem;
+}
+
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-icon {
+  font-size: 1.3rem;
+  color: #007bff;
+  margin-right: 0.5rem;
+}
+
+.edit-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.edit-button:hover {
+  background: #f0f7ff;
+}
+
+.edit-button .material-icons {
+  font-size: 1rem;
+}
+
+/* 정보 그리드 스타일 */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.info-item {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.info-label {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.info-value {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 폼 스타일 */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .form-group {
@@ -508,23 +802,27 @@ h1 {
 }
 
 .form-group label {
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 500;
   color: #555;
 }
 
 .form-group input,
 .form-group select {
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   font-size: 1rem;
+  transition: all 0.2s;
+  background-color: #f9f9f9;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  background-color: white;
 }
 
 .validation-error {
@@ -533,30 +831,34 @@ h1 {
   margin-top: 0.2rem;
 }
 
-.edit-buttons {
+.form-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
+  justify-content: flex-end;
 }
 
 .save-btn,
 .cancel-btn {
-  padding: 0.8rem;
+  padding: 0.8rem 1.5rem;
   border-radius: 8px;
-  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  border: none;
-  flex: 1;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .save-btn {
   background: #007bff;
   color: white;
+  border: none;
 }
 
 .save-btn:hover {
   background: #0069d9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.2);
 }
 
 .cancel-btn {
@@ -566,44 +868,95 @@ h1 {
 }
 
 .cancel-btn:hover {
-  background: #f1f3f5;
+  background: #e9ecef;
 }
 
-.logout-btn {
-  display: block;
-  width: 100%;
-  padding: 0.8rem;
-  margin-top: 2rem;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
+/* 보안 옵션 스타일 */
+.security-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.option-btn {
+  padding: 1rem;
   border-radius: 8px;
-  font-size: 1rem;
-  color: #666;
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #555;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  flex: 1;
 }
 
-.logout-btn:hover {
-  background: #f1f3f5;
+.option-btn:hover {
+  background: #f0f7ff;
+  border-color: #cce5ff;
   color: #007bff;
 }
 
-@media (max-width: 768px) {
+.option-btn .material-icons {
+  color: #007bff;
+}
+
+/* 반응형 스타일 */
+@media (max-width: 992px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .profile-card {
-    padding: 1.5rem 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    padding: 2rem 0;
   }
   
-  .info-row {
+  .page-title {
+    font-size: 1.8rem;
+  }
+  
+  .profile-section {
+    padding: 1.5rem;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .security-options {
     flex-direction: column;
-    gap: 0.3rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0 1rem;
   }
   
-  .label {
-    flex: none;
+  .profile-avatar {
+    width: 120px;
+    height: 120px;
   }
   
-  .edit-buttons {
-    flex-direction: column;
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .save-btn, .cancel-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

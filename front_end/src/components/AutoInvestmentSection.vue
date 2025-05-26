@@ -623,7 +623,7 @@ const createPieChartGradient = computed(() => {
   
   // 각 종목의 가치 계산
   const stockValues = portfolioStocks.value.map(stock => {
-    const price = parseInt(stock.currentPrice.replace(/,/g, ''));
+    const price = parseInt(stock.price.replace(/,/g, ''));
     return price * stock.quantity;
   });
   
@@ -1199,7 +1199,7 @@ watch(stockWeights, () => {
 .label-color {
   width: 12px;
   height: 12px;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .label-name {
@@ -1208,8 +1208,7 @@ watch(stockWeights, () => {
 }
 
 .label-value {
-  font-weight: 600;
-  color: #28a745;
+  font-weight: 500;
 }
 
 /* 비중 설정 관련 스타일 */
@@ -1731,14 +1730,6 @@ watch(stockWeights, () => {
   transform: scale(1.1);
 }
 
-.ratio-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #28a745;
-  width: 40px;
-  text-align: center;
-}
-
 .stocks-setup {
   background: white;
   border-radius: 12px;
@@ -2043,75 +2034,43 @@ watch(stockWeights, () => {
   background-color: #218838;
 }
 
-/* 새로 추가된 스타일 */
-.stocks-portfolio h4 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1rem;
+/* 탭 스타일 */
+.settings-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.status-item.highlight {
-  grid-column: span 2;
-}
-
-.pie-chart {
-  position: relative;
-  width: 150px;
-  height: 150px;
-  margin: 0 auto;
-  border-radius: 50%;
-  background-color: #f5f5f5;
+  gap: 1px;
+  margin-bottom: 1rem;
+  background-color: #f0f0f0;
+  border-radius: 8px;
   overflow: hidden;
 }
 
-.chart-labels {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.chart-label-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.label-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-}
-
-.label-value {
+.tab-btn {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: none;
+  background-color: #f8f9fa;
+  color: #555;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-size: 0.95rem;
 }
 
-@media (max-width: 768px) {
-  .purchase-settings {
-    grid-template-columns: 1fr;
-  }
-  
-  .status-summary {
-    grid-template-columns: 1fr;
-  }
-  
-  .status-item.highlight {
-    grid-column: auto;
-  }
-  
-  .investment-analytics {
-    grid-template-columns: 1fr;
-  }
-  
-  .portfolio-details {
-    grid-template-columns: 1fr;
-  }
+.tab-btn.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.tab-btn:hover:not(.active) {
+  background-color: #e9ecef;
+  color: #333;
+}
+
+.tab-content {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 </style>

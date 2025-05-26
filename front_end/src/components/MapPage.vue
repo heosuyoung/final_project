@@ -12,14 +12,57 @@
       <!-- 검색 및 필터 섹션 -->
       <div class="search-panel">
         <h2 class="panel-title">지점 검색</h2>
-        
-        <!-- 출발지 정보 카드 -->
-        <div class="origin-card" @click="focusOnStartLocation">
-          <div class="origin-icon">🏢</div>
-          <div class="origin-details">
-            <h3>출발지</h3>
-            <p class="location-name">SSAFY 부울경 캠퍼스</p>
-            <p class="location-address">부산 강서구 녹산산업중로 333</p>
+          <!-- 출발지 설정 -->
+        <div class="location-settings">
+          <div class="location-header">
+            <h3>출발지와 도착지 설정</h3>
+          </div>
+          
+          <!-- 출발지 선택 -->
+          <div class="location-selector">
+            <label for="start-location">출발지</label>
+            <div class="selector-content">
+              <select v-model="selectedStartLocation" id="start-location" class="location-select">
+                <option value="default">SSAFY 부울경 캠퍼스</option>
+                <option value="custom">직접 입력</option>
+                <option value="current">현재 위치</option>
+              </select>
+              <input 
+                v-if="selectedStartLocation === 'custom'" 
+                v-model="customStartLocation" 
+                type="text" 
+                placeholder="출발지 주소 입력" 
+                class="custom-location-input" 
+              />
+              <button v-if="selectedStartLocation === 'custom'" @click="searchCustomLocation('start')" class="location-search-btn">
+                검색
+              </button>
+            </div>
+          </div>
+          
+          <!-- 교통수단 선택 -->
+          <div class="transport-options">
+            <h4>이동 수단 선택</h4>
+            <div class="transport-buttons">
+              <button 
+                :class="['transport-btn', transportMode === 'car' ? 'active' : '']" 
+                @click="transportMode = 'car'"
+              >
+                🚗 자동차
+              </button>
+              <button 
+                :class="['transport-btn', transportMode === 'walk' ? 'active' : '']" 
+                @click="transportMode = 'walk'"
+              >
+                🚶 도보
+              </button>
+              <button 
+                :class="['transport-btn', transportMode === 'bike' ? 'active' : '']" 
+                @click="transportMode = 'bike'"
+              >
+                🚲 자전거
+              </button>
+            </div>
           </div>
         </div>
         
@@ -59,8 +102,7 @@
         <div class="search-results" v-if="searchResults.length > 0">
           <h3 class="results-title">검색 결과 <span class="result-count">{{ searchResults.length }}개</span></h3>
           
-          <div class="results-list">
-            <div 
+          <div class="results-list">            <div 
               v-for="(place, index) in searchResults" 
               :key="index" 
               class="result-card"
@@ -72,6 +114,19 @@
               </div>
               
               <p class="place-address">{{ place.address_name }}</p>
+              
+              <!-- 예상 소요 시간 정보 -->
+              <div class="travel-time" v-if="place.duration">
+                <div class="travel-icon">
+                  <span v-if="transportMode === 'car'">🚗</span>
+                  <span v-else-if="transportMode === 'walk'">🚶</span>
+                  <span v-else-if="transportMode === 'bike'">🚲</span>
+                </div>
+                <div class="travel-info">
+                  <span class="travel-duration">{{ formatDuration(place.duration) }}</span>
+                  <span class="travel-distance">{{ formatDistance(place.distance) }}</span>
+                </div>
+              </div>
               
               <div class="result-actions">
                 <button @click.stop="showDirections(place)" class="action-btn directions-btn">
@@ -121,7 +176,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import data from '../assets/data.json'
 
 // 데이터
@@ -134,13 +189,35 @@ const selectedBank = ref('')
 const selectedCountries = ref([])
 const searchResults = ref([]) // 검색 결과 저장
 
-// 출발지 정보 (고정)
-const startLocation = {
+// 출발지 설정
+const selectedStartLocation = ref('default')
+const customStartLocation = ref('')
+const transportMode = ref('car')  // 'car', 'walk', 'bike' 중 하나
+
+// 출발지 정보 (기본값)
+const defaultStartLocation = {
   name: 'SSAFY 부울경 캠퍼스',
   address: '부산 강서구 녹산산업중로 333',
   lat: 35.094663, // 위도
   lng: 128.855308 // 경도
 }
+
+// 실제 사용할 출발지 정보 (computed)
+const startLocation = computed(() => {
+  if (selectedStartLocation.value === 'default') {
+    return defaultStartLocation
+  } else if (selectedStartLocation.value === 'custom' && customStartLocationData.value) {
+    return customStartLocationData.value
+  } else if (selectedStartLocation.value === 'current' && currentLocationData.value) {
+    return currentLocationData.value
+  }
+  return defaultStartLocation
+})
+
+// 사용자 정의 출발지 데이터
+const customStartLocationData = ref(null)
+// 현재 위치 데이터
+const currentLocationData = ref(null)
 
 let mapInstance = null
 let markers = []
@@ -170,17 +247,25 @@ const focusOnMarker = (index) => {
   }
 }
 
-// 출발지(SSAFY 캠퍼스)로 지도 이동 및 인포윈도우 표시
+// 출발지로 지도 이동 및 인포윈도우 표시
 const focusOnStartLocation = () => {
   if (mapInstance && startMarker && startInfoWindow) {
     // 출발지 위치로 지도 이동
-    mapInstance.setCenter(new kakao.maps.LatLng(startLocation.lat, startLocation.lng))
+    mapInstance.setCenter(new kakao.maps.LatLng(startLocation.value.lat, startLocation.value.lng))
     mapInstance.setLevel(3) // 확대 레벨 조정
     
     // 다른 인포윈도우 닫기 (검색 결과 인포윈도우)
     infowindows.forEach(iw => iw.close())
     
     // 출발지 인포윈도우 열기
+    
+    // 인포윈도우 내용 업데이트
+    startInfoWindow.setContent(`<div class="custom-start-info">
+      <div class="start-title">${startLocation.value.name}</div>
+      <div class="start-address">${startLocation.value.address}</div>
+      <div class="start-label">출발지</div>
+    </div>`)
+    
     startInfoWindow.open(mapInstance, startMarker)
   }
 }
@@ -198,21 +283,36 @@ const showDirections = (place) => {
   }
   
   // 출발지와 도착지 좌표 설정
-  const start = startLocation // 출발지 (SSAFY 부울경 캠퍼스)
+  const start = startLocation.value // 출발지 (선택된 출발지)
   const end = {
     name: place.place_name,
     lat: place.y, 
     lng: place.x
   }
   
+  // 교통수단에 따라 다른 URL 파라미터 사용
+  let routeMode = 'car' // 기본값 자동차
+  
+  // 카카오맵에서는 car만 공식 지원, 나머지는 다른 방식으로 구현 필요
+  if (transportMode.value === 'walk') {
+    routeMode = 'foot' // 비공식 파라미터 (작동하지 않을 수 있음)
+  } else if (transportMode.value === 'bike') {
+    routeMode = 'bike' // 비공식 파라미터 (작동하지 않을 수 있음)
+  }
+  
   // 카카오맵 길찾기 URL 생성
   // 카카오맵 웹 URL 방식 사용: https://apis.map.kakao.com/web/guide/#routeurl
-  const kakaoMapUrl = `https://map.kakao.com/link/to/${end.name},${end.lat},${end.lng}/from/${start.name},${start.lat},${start.lng}`
+  let kakaoMapUrl = `https://map.kakao.com/link/to/${end.name},${end.lat},${end.lng}/from/${start.name},${start.lat},${start.lng}`
+  
+  // 교통수단 정보 추가 (비공식 파라미터)
+  if (transportMode.value !== 'car') {
+    kakaoMapUrl += `?routeMode=${routeMode}`
+  }
   
   // 새 창에서 카카오맵 길찾기 열기
   window.open(kakaoMapUrl, '_blank')
   
-  // 지도에 경로 표시 (선택적 기능)
+  // 지도에 경로 표시
   showRouteOnMap(start, end)
 }
 
@@ -223,32 +323,145 @@ const showRouteOnMap = (start, end) => {
     window.currentRoute.setMap(null)
   }
   
-  // 경로 그리기
-  const linePath = [
-    new kakao.maps.LatLng(start.lat, start.lng),
-    new kakao.maps.LatLng(end.lat, end.lng)
-  ]
+  if (window.currentRouteMarkers) {
+    window.currentRouteMarkers.forEach(marker => marker.setMap(null))
+    window.currentRouteMarkers = []
+  }
   
-  // 경로 선 생성
-  const polyline = new kakao.maps.Polyline({
-    path: linePath,
-    strokeWeight: 5,
-    strokeColor: '#FF0000',
-    strokeOpacity: 0.7,
-    strokeStyle: 'solid'
+  // 교통수단에 따라 색상 및 스타일 변경
+  let strokeColor, strokeStyle
+  
+  switch(transportMode.value) {
+    case 'car':
+      strokeColor = '#3366FF' // 파란색
+      strokeStyle = 'solid'
+      break
+    case 'walk':
+      strokeColor = '#00C73C' // 녹색
+      strokeStyle = 'shortdash'
+      break
+    case 'bike':
+      strokeColor = '#FF3366' // 붉은색
+      strokeStyle = 'dashdot'
+      break
+    default:
+      strokeColor = '#3366FF'
+      strokeStyle = 'solid'
+  }
+  
+  // 카카오 길찾기 API로 실제 경로 가져오기 시도
+  const directions = new kakao.maps.services.Directions()
+  
+  directions.route({
+    origin: new kakao.maps.LatLng(start.lat, start.lng),
+    destination: new kakao.maps.LatLng(end.lat, end.lng),
+    waypoints: [],
+    priority: 'RECOMMEND'
+  }, (result, status) => {
+    // 두 지점이 모두 보이게 지도 중심 및 레벨 조정
+    const bounds = new kakao.maps.LatLngBounds()
+    bounds.extend(new kakao.maps.LatLng(start.lat, start.lng))
+    bounds.extend(new kakao.maps.LatLng(end.lat, end.lng))
+    
+    if (status === kakao.maps.services.Status.OK && result.routes && result.routes.length > 0) {
+      // 자동차 경로일 경우 API 결과 사용
+      const route = result.routes[0]
+      
+      // 경로 그리기
+      const linePath = []
+      
+      // 경로의 각 구간(sections)에 대한 처리
+      route.sections.forEach(section => {
+        // 각 구간의 경로(roads)에 대한 처리
+        section.roads.forEach(road => {
+          // 각 경로에 포함된 node(좌표점)에 대한 처리
+          road.vertexes.forEach((vertex, index) => {
+            // 위도(lat)와 경도(lng)로 변환
+            // vertexes 배열의 짝수 인덱스는 경도(lng), 홀수 인덱스는 위도(lat)
+            if (index % 2 === 0 && index + 1 < road.vertexes.length) {
+              const lng = vertex
+              const lat = road.vertexes[index + 1]
+              
+              const latLng = new kakao.maps.LatLng(lat, lng)
+              linePath.push(latLng)
+              bounds.extend(latLng)
+            }
+          })
+        })
+      })
+      
+      // 경로 선 생성
+      const polyline = new kakao.maps.Polyline({
+        path: linePath,
+        strokeWeight: 5,
+        strokeColor: strokeColor,
+        strokeOpacity: 0.8,
+        strokeStyle: strokeStyle
+      })
+      
+      // 경로를 지도에 표시
+      polyline.setMap(mapInstance)
+      
+      // 현재 경로 저장 (나중에 삭제하기 위해)
+      window.currentRoute = polyline
+      
+    } else {
+      console.log('길찾기 API 호출 실패 또는 결과 없음. 직선 경로로 표시합니다.')
+      
+      // API 호출 실패시 직선 경로로 표시
+      const linePath = [
+        new kakao.maps.LatLng(start.lat, start.lng),
+        new kakao.maps.LatLng(end.lat, end.lng)
+      ]
+      
+      // 경로 선 생성
+      const polyline = new kakao.maps.Polyline({
+        path: linePath,
+        strokeWeight: 5,
+        strokeColor: strokeColor,
+        strokeOpacity: 0.8,
+        strokeStyle: strokeStyle
+      })
+      
+      // 경로를 지도에 표시
+      polyline.setMap(mapInstance)
+      
+      // 현재 경로 저장 (나중에 삭제하기 위해)
+      window.currentRoute = polyline
+    }
+    
+    // 출발지 마커 표시
+    const startMarkerImage = new kakao.maps.MarkerImage(
+      'https://t1.daumcdn.net/mapjsapi/images/marker_green.png',
+      new kakao.maps.Size(30, 44),
+      { offset: new kakao.maps.Point(15, 44) }
+    )
+    
+    const startMarker = new kakao.maps.Marker({
+      position: new kakao.maps.LatLng(start.lat, start.lng),
+      image: startMarkerImage,
+      map: mapInstance
+    })
+    
+    // 도착지 마커 표시
+    const endMarkerImage = new kakao.maps.MarkerImage(
+      'https://t1.daumcdn.net/mapjsapi/images/marker_red.png',
+      new kakao.maps.Size(30, 44),
+      { offset: new kakao.maps.Point(15, 44) }
+    )
+    
+    const endMarker = new kakao.maps.Marker({
+      position: new kakao.maps.LatLng(end.lat, end.lng),
+      image: endMarkerImage,
+      map: mapInstance
+    })
+    
+    // 마커 저장 (나중에 삭제하기 위해)
+    window.currentRouteMarkers = [startMarker, endMarker]
+    
+    // 지도 범위 설정
+    mapInstance.setBounds(bounds)
   })
-  
-  // 경로를 지도에 표시
-  polyline.setMap(mapInstance)
-  
-  // 현재 경로 저장 (나중에 삭제하기 위해)
-  window.currentRoute = polyline
-  
-  // 두 지점이 모두 보이게 지도 중심 및 레벨 조정
-  const bounds = new kakao.maps.LatLngBounds()
-  bounds.extend(new kakao.maps.LatLng(start.lat, start.lng))
-  bounds.extend(new kakao.maps.LatLng(end.lat, end.lng))
-  mapInstance.setBounds(bounds)
 }
 
 // 모든 기존 마커와 인포윈도우 제거 함수
@@ -323,8 +536,33 @@ const loadKakaoMap = () => {
   })
 }
 
+// 소요 시간 형식화
+const formatDuration = (seconds) => {
+  if (!seconds) return '시간 정보 없음'
+  
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  
+  if (hours > 0) {
+    return `${hours}시간 ${minutes}분`
+  } else {
+    return `${minutes}분`
+  }
+}
+
+// 거리 형식화
+const formatDistance = (meters) => {
+  if (!meters) return ''
+  
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(1)}km`
+  } else {
+    return `${meters}m`
+  }
+}
+
 // 검색 함수
-const searchBanks = () => {
+const searchBanks = async () => {
   console.log('searchBanks 실행됨') // 클릭 작동 확인용
 
   if (!window.kakao || !window.kakao.maps) {
@@ -336,7 +574,8 @@ const searchBanks = () => {
   console.log('[선택된 값들]', {
     do: selectedDo.value,
     sigungu: selectedSigungu.value,
-    bank: selectedBank.value
+    bank: selectedBank.value,
+    transportMode: transportMode.value
   })
 
   // 모든 값이 선택되었는지 확인
@@ -357,67 +596,105 @@ const searchBanks = () => {
   clearMarkers()
 
   // 키워드로 장소 검색
-  places.keywordSearch(query, function(result, status) {
+  places.keywordSearch(query, async function(result, status) {
     console.log('[키워드 검색 결과]', result)
     console.log('[키워드 검색 상태]', status)
     
     if (status === kakao.maps.services.Status.OK) {
-      // 검색 결과 저장
-      searchResults.value = result
-      
-      // 첫번째 결과의 위치로 맵 이동 (확대 레벨 조정)
-      const firstCoords = new kakao.maps.LatLng(result[0].y, result[0].x)
-      mapInstance.setCenter(firstCoords)
-      mapInstance.setLevel(4) // 적절한 확대 레벨로 설정
-      
-      // 검색된 모든 은행에 마커 표시
-      result.forEach((place, index) => {
-        const coords = new kakao.maps.LatLng(place.y, place.x)
+      try {
+        // 검색 결과에 소요 시간 및 거리 정보 추가
+        const resultsWithRouteInfo = await Promise.all(
+          result.map(async (place) => {
+            try {
+              const routeInfo = await calculateRouteInfo(
+                { lat: startLocation.value.lat, lng: startLocation.value.lng },
+                { lat: parseFloat(place.y), lng: parseFloat(place.x) }
+              )
+              
+              return {
+                ...place,
+                duration: routeInfo.duration,
+                distance: routeInfo.distance
+              }
+            } catch (err) {
+              console.error('경로 계산 중 오류:', err)
+              return place
+            }
+          })
+        )
         
-        // 마커 생성 (인덱스 레이블 추가)
-        const marker = new kakao.maps.Marker({
-          map: mapInstance,
-          position: coords,
-          title: place.place_name
-        })
-        markers.push(marker)
-        
-        // 인포윈도우 생성
-        const infoContent = `
-          <div class="custom-info-window">
-            <div class="info-title">${place.place_name}</div>
-            <div class="info-address">${place.address_name}</div>
-            <button onclick="window.showDirectionsFromMap && window.showDirectionsFromMap(${index})" class="info-button">
-              길찾기
-            </button>
-          </div>
-        `
-        
-        const infowindow = new kakao.maps.InfoWindow({
-          content: infoContent,
-          removable: true
-        })
-        infowindows.push(infowindow)
-        
-        // 마커 클릭시 인포윈도우 표시
-        kakao.maps.event.addListener(marker, 'click', function() {
-          // 다른 인포윈도우 닫기
-          infowindows.forEach(iw => iw.close())
-          // 현재 인포윈도우 열기
-          infowindow.open(mapInstance, marker)
+        // 소요 시간 기준으로 정렬
+        resultsWithRouteInfo.sort((a, b) => {
+          if (!a.duration) return 1
+          if (!b.duration) return -1
+          return a.duration - b.duration
         })
         
-        // 첫번째 마커에 인포윈도우 자동 열기
-        if (index === 0) {
-          infowindow.open(mapInstance, marker)
+        // 검색 결과 저장
+        searchResults.value = resultsWithRouteInfo
+        
+        // 첫번째 결과의 위치로 맵 이동 (확대 레벨 조정)
+        const firstCoords = new kakao.maps.LatLng(resultsWithRouteInfo[0].y, resultsWithRouteInfo[0].x)
+        mapInstance.setCenter(firstCoords)
+        mapInstance.setLevel(4) // 적절한 확대 레벨로 설정
+        
+        // 검색된 모든 은행에 마커 표시
+        resultsWithRouteInfo.forEach((place, index) => {
+          const coords = new kakao.maps.LatLng(place.y, place.x)
+          
+          // 마커 생성 (인덱스 레이블 추가)
+          const marker = new kakao.maps.Marker({
+            map: mapInstance,
+            position: coords,
+            title: place.place_name
+          })
+          markers.push(marker)
+          
+          // 인포윈도우 생성
+          const durationText = place.duration ? formatDuration(place.duration) : '시간 정보 없음'
+          const distanceText = place.distance ? formatDistance(place.distance) : ''
+          
+          const infoContent = `
+            <div class="custom-info-window">
+              <div class="info-title">${place.place_name}</div>
+              <div class="info-address">${place.address_name}</div>
+              <div class="info-travel-time">
+                ${getTransportIcon(transportMode.value)} ${durationText} (${distanceText})
+              </div>
+              <button onclick="window.showDirectionsFromMap && window.showDirectionsFromMap(${index})" class="info-button">
+                길찾기
+              </button>
+            </div>
+          `
+          
+          const infowindow = new kakao.maps.InfoWindow({
+            content: infoContent,
+            removable: true
+          })
+          infowindows.push(infowindow)
+          
+          // 마커 클릭시 인포윈도우 표시
+          kakao.maps.event.addListener(marker, 'click', function() {
+            // 다른 인포윈도우 닫기
+            infowindows.forEach(iw => iw.close())
+            // 현재 인포윈도우 열기
+            infowindow.open(mapInstance, marker)
+          })
+          
+          // 첫번째 마커에 인포윈도우 자동 열기
+          if (index === 0) {
+            infowindow.open(mapInstance, marker)
+          }
+        })
+        
+        // 인포윈도우 내 버튼으로 길찾기할 수 있도록 전역함수 설정
+        window.showDirectionsFromMap = (index) => {
+          if (searchResults.value && searchResults.value.length > index) {
+            showDirections(searchResults.value[index])
+          }
         }
-      })
-      
-      // 인포윈도우 내 버튼으로 길찾기할 수 있도록 전역함수 설정
-      window.showDirectionsFromMap = (index) => {
-        if (searchResults.value && searchResults.value.length > index) {
-          showDirections(searchResults.value[index])
-        }
+      } catch (err) {
+        console.error('검색 결과 처리 중 오류:', err)
       }
       
     } else {
@@ -457,6 +734,138 @@ const searchBanks = () => {
     }
   })
 }
+
+// 교통수단 아이콘 얻기
+const getTransportIcon = (mode) => {
+  switch (mode) {
+    case 'car': return '🚗'
+    case 'walk': return '🚶'
+    case 'bike': return '🚲'
+    default: return '🚗'
+  }
+}
+
+// 사용자 정의 위치 검색
+const searchCustomLocation = (type) => {
+  if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+    console.error('카카오맵 API가 로드되지 않았습니다.')
+    alert('카카오맵 API가 로드되지 않아 위치 검색 기능을 사용할 수 없습니다.')
+    return
+  }
+  
+  const geocoder = new kakao.maps.services.Geocoder()
+  const address = type === 'start' ? customStartLocation.value : ''
+  
+  if (!address) {
+    alert('주소를 입력해주세요.')
+    return
+  }
+  
+  // 주소로 좌표 검색
+  geocoder.addressSearch(address, (result, status) => {
+    if (status === kakao.maps.services.Status.OK) {
+      const coords = new kakao.maps.LatLng(result[0].y, result[0].x)
+      
+      if (type === 'start') {
+        customStartLocationData.value = {
+          name: address,
+          address: result[0].address_name || address,
+          lat: parseFloat(result[0].y),
+          lng: parseFloat(result[0].x)
+        }
+        
+        // 지도 이동
+        if (mapInstance) {
+          mapInstance.setCenter(coords)
+          mapInstance.setLevel(3)
+          
+          // 기존 출발지 마커 업데이트
+          if (startMarker) {
+            startMarker.setPosition(coords)
+            
+            // 인포윈도우 내용 업데이트
+            if (startInfoWindow) {
+              startInfoWindow.setContent(`<div class="custom-start-info">
+                <div class="start-title">${address}</div>
+                <div class="start-address">${result[0].address_name || ''}</div>
+                <div class="start-label">출발지</div>
+              </div>`)
+              startInfoWindow.open(mapInstance, startMarker)
+            }
+          }
+        }
+        
+        console.log('출발지 설정 완료:', customStartLocationData.value)
+      }
+    } else {
+      alert('주소 검색에 실패했습니다. 정확한 주소를 입력해주세요.')
+    }
+  })
+}
+
+// 현재 위치 가져오기
+const getCurrentLocation = () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+        
+        // 좌표로 주소 검색
+        const geocoder = new kakao.maps.services.Geocoder()
+        geocoder.coord2Address(lng, lat, (result, status) => {
+          if (status === kakao.maps.services.Status.OK) {
+            const addressName = result[0].address.address_name || '현재 위치'
+            
+            currentLocationData.value = {
+              name: '현재 위치',
+              address: addressName,
+              lat: lat,
+              lng: lng
+            }
+            
+            // 지도 이동
+            if (mapInstance) {
+              const coords = new kakao.maps.LatLng(lat, lng)
+              mapInstance.setCenter(coords)
+              mapInstance.setLevel(3)
+              
+              // 기존 출발지 마커 업데이트
+              if (startMarker) {
+                startMarker.setPosition(coords)
+                
+                // 인포윈도우 내용 업데이트
+                if (startInfoWindow) {
+                  startInfoWindow.setContent(`<div class="custom-start-info">
+                    <div class="start-title">현재 위치</div>
+                    <div class="start-address">${addressName}</div>
+                    <div class="start-label">출발지</div>
+                  </div>`)
+                  startInfoWindow.open(mapInstance, startMarker)
+                }
+              }
+            }
+            
+            console.log('현재 위치 설정 완료:', currentLocationData.value)
+          }
+        })
+      },
+      (error) => {
+        console.error('위치 정보를 가져오는데 실패했습니다:', error)
+        alert('위치 정보를 가져오는데 실패했습니다. 브라우저 설정에서 위치 접근 권한을 허용해주세요.')
+      }
+    )
+  } else {
+    alert('이 브라우저에서는 위치 정보 기능을 지원하지 않습니다.')
+  }
+}
+
+// 출발지 선택 변경 감지
+watch(selectedStartLocation, (newValue) => {
+  if (newValue === 'current') {
+    getCurrentLocation()
+  }
+})
 
 // 로컬 알림창 확인 버튼 처리 함수
 const handleConfirmMessage = () => {
@@ -538,509 +947,9 @@ onMounted(async () => {
     // 초기 데이터 확인용 로그
     console.log('지도 정보:', mapInfo.length, '개 지역')
     console.log('은행 정보:', bankInfo.length, '개 은행')
-    
-  } catch (e) {
+      } catch (e) {
     console.error('카카오맵 로딩 실패:', e)
     alert('카카오맵 로딩에 실패했습니다. 개발자 도구의 콘솔에서 자세한 오류를 확인하세요.')
   }
 })
 </script>
-
-<style scoped>
-.map-page {
-  font-family: 'Noto Sans KR', sans-serif;
-  color: #333;
-  background-color: #f8f9ff;
-}
-
-/* 헤더 스타일 */
-.map-header {
-  background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-  padding: 5rem 0 3rem;
-  color: white;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-.page-title {
-  font-size: 2.8rem;
-  font-weight: 700;
-  margin-bottom: 0.8rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.page-subtitle {
-  font-size: 1.2rem;
-  font-weight: 400;
-  opacity: 0.9;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.5;
-}
-
-/* 지도 컨테이너 레이아웃 */
-.map-container {
-  display: flex;
-  max-width: 1400px;
-  margin: 0 auto;
-  min-height: calc(100vh - 250px);
-  padding: 0 1rem 2rem;
-}
-
-/* 검색 패널 */
-.search-panel {
-  width: 380px;
-  min-width: 320px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-  padding: 1.5rem;
-  margin-right: 1.5rem;
-  height: fit-content;
-  max-height: calc(100vh - 250px);
-  overflow-y: auto;
-  z-index: 10;
-}
-
-.panel-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: #333;
-}
-
-/* 출발지 카드 스타일 */
-.origin-card {
-  display: flex;
-  align-items: center;
-  background-color: #f0f8ff;
-  padding: 1.2rem;
-  border-radius: 10px;
-  margin-bottom: 1.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-left: 4px solid #4e54c8;
-}
-
-.origin-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.origin-icon {
-  font-size: 2rem;
-  margin-right: 1rem;
-  color: #4e54c8;
-}
-
-.origin-details h3 {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0 0 0.3rem;
-}
-
-.location-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 0.2rem;
-  color: #4e54c8;
-}
-
-.location-address {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0;
-}
-
-/* 검색 필터 스타일 */
-.search-filters {
-  margin-bottom: 1.5rem;
-}
-
-.filter-item {
-  margin-bottom: 1rem;
-}
-
-.filter-item label {
-  display: block;
-  margin-bottom: 0.4rem;
-  font-size: 0.9rem;
-  color: #555;
-  font-weight: 500;
-}
-
-.filter-select {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  background-color: #f8f9ff;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 30px;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: #8f94fb;
-  box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
-}
-
-.filter-select:disabled {
-  background-color: #f0f0f0;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* 검색 버튼 */
-.search-btn {
-  width: 100%;
-  padding: 1rem;
-  background: linear-gradient(90deg, #4e54c8, #8f94fb);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-  margin-bottom: 1.5rem;
-}
-
-.search-btn:hover {
-  box-shadow: 0 4px 15px rgba(78, 84, 200, 0.3);
-  transform: translateY(-2px);
-}
-
-.search-btn:active {
-  transform: translateY(0);
-}
-
-.search-icon {
-  margin-right: 0.5rem;
-  font-size: 1.1rem;
-}
-
-/* 검색 결과 스타일 */
-.search-results {
-  margin-top: 2rem;
-  border-top: 1px solid #eee;
-  padding-top: 1.5rem;
-}
-
-.results-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.result-count {
-  font-size: 0.9rem;
-  background-color: #f0f0f0;
-  padding: 0.2rem 0.8rem;
-  border-radius: 20px;
-  color: #555;
-  font-weight: 500;
-}
-
-.results-list {
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.result-card {
-  background-color: white;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.result-card:hover {
-  border-color: #8f94fb;
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.place-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-  color: #333;
-}
-
-.result-index {
-  background-color: #4e54c8;
-  color: white;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.place-address {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0.5rem 0 1rem;
-}
-
-.result-actions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.action-btn {
-  flex: 1;
-  font-size: 0.85rem;
-  padding: 0.5rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  transition: all 0.2s;
-}
-
-.directions-btn {
-  background-color: #4e54c8;
-  color: white;
-}
-
-.directions-btn:hover {
-  background-color: #3f43a1;
-}
-
-.view-btn {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-.view-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.no-results {
-  text-align: center;
-  padding: 2rem 1rem;
-  color: #666;
-  background-color: #f8f9ff;
-  border-radius: 8px;
-}
-
-/* 디지털 뱅킹 도우미 섹션 */
-.banking-helper {
-  margin-top: 2rem;
-  border-top: 1px solid #eee;
-  padding-top: 1.5rem;
-}
-
-.banking-helper h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.helper-cards {
-  display: flex;
-  gap: 1rem;
-}
-
-.helper-card {
-  flex: 1;
-  background: linear-gradient(145deg, #f8f9ff, #ffffff);
-  border-radius: 10px;
-  padding: 1.2rem;
-  text-align: center;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s;
-}
-
-.helper-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
-
-.helper-icon {
-  font-size: 2rem;
-  margin-bottom: 0.8rem;
-}
-
-.helper-card h4 {
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
-  color: #4e54c8;
-}
-
-.helper-card p {
-  font-size: 0.8rem;
-  color: #666;
-  margin: 0;
-}
-
-/* 지도 뷰 스타일 */
-.map-view {
-  flex: 1;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-  position: relative;
-}
-
-#map {
-  width: 100%;
-  height: 100%;
-  min-height: 600px;
-}
-
-/* 인포윈도우 커스텀 스타일 (전역 스타일로 설정해야 함) */
-:global(.custom-info-window) {
-  padding: 10px;
-  width: 220px;
-  text-align: center;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-:global(.info-title) {
-  font-weight: bold;
-  font-size: 16px;
-  color: #4e54c8;
-  margin-bottom: 5px;
-}
-
-:global(.info-address) {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 10px;
-}
-
-:global(.info-button) {
-  background-color: #4e54c8;
-  color: white;
-  border: none;
-  padding: 5px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-}
-
-:global(.info-button:hover) {
-  background-color: #3f43a1;
-}
-
-:global(.custom-start-info) {
-  padding: 10px;
-  width: 220px;
-  text-align: center;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-:global(.start-title) {
-  font-weight: bold;
-  font-size: 16px;
-  color: #3366cc;
-  margin-bottom: 5px;
-}
-
-:global(.start-address) {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 5px;
-}
-
-:global(.start-label) {
-  font-size: 11px;
-  color: white;
-  background-color: #3366cc;
-  padding: 3px 10px;
-  border-radius: 10px;
-  display: inline-block;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 1024px) {
-  .map-container {
-    flex-direction: column;
-  }
-  
-  .search-panel {
-    width: 100%;
-    margin-right: 0;
-    margin-bottom: 1.5rem;
-    max-height: none;
-  }
-  
-  .map-view {
-    height: 500px;
-  }
-  
-  #map {
-    min-height: 500px;
-  }
-}
-
-@media (max-width: 768px) {
-  .map-header {
-    padding: 4rem 0 2rem;
-  }
-  
-  .page-title {
-    font-size: 2.2rem;
-  }
-  
-  .helper-cards {
-    flex-direction: column;
-  }
-  
-  .map-view {
-    height: 400px;
-  }
-  
-  #map {
-    min-height: 400px;
-  }
-}
-
-@media (max-width: 480px) {
-  .result-actions {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-}
-</style>
