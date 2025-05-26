@@ -7,22 +7,24 @@ cryptography==44.0.2
 defusedxml==0.7.1
 Django==4.2.20
 django-environ==0.12.0
+django-cors-headers==4.3.1  # CORS 지원을 위한 패키지
+djangorestframework==3.15.1  # REST API 구축을 위한 패키지
+djangorestframework-simplejwt==5.3.1  # JWT 인증 지원
 Flask==3.0.2
 Flask-CORS==4.0.0
 idna==3.10
+json-log-formatter==0.5.2  # 로깅 포맷터 (JSON 형식의 로그 생성)
 oauthlib==3.2.2
+openai==1.27.0  # OpenAI API 사용을 위한 패키지
 pycparser==2.22
 PyJWT==2.10.1
 python3-openid==3.2.0
-requests==2.32.3
+requests==2.32.3  # HTTP 요청 및 API 테스트를 위한 패키지
 requests-oauthlib==2.0.0
+retry==0.9.2  # 예외 상황에서 함수 재시도를 위한 유틸리티
 social-auth-app-django==5.4.3
 social-auth-core==4.5.6
 sqlparse==0.5.3
 typing_extensions==4.13.2
 tzdata==2025.2
 urllib3==2.4.0
-django-cors-headers==4.3.1
-djangorestframework==3.15.1
-djangorestframework-simplejwt==5.3.1
-openai==1.27.0

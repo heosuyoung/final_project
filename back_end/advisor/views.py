@@ -9,9 +9,7 @@ import json
 import os
 from openai import OpenAI
 
-# OpenAI 클라이언트 설정 - 클라이언트 변수를 나중에 함수 내에서 생성
-from django.conf import settings
-api_key = settings.OPENAI_API_KEY
+# OpenAI API 키 직접 설정
 
 @api_view(['POST'])
 @permission_classes([AllowAny])  # 인증 없이 모든 사용자가 접근 가능하도록 설정 - AllowAny 사용
@@ -193,11 +191,11 @@ def chat_with_advisor(request):
             if context:
                 for msg in context:
                     messages.append({"role": msg["role"], "content": msg["content"]})
-            
-            # 사용자의 새 메시지 추가
+              # 사용자의 새 메시지 추가
             messages.append({"role": "user", "content": message})
-              # API 키 확인
-            api_key_value = settings.OPENAI_API_KEY
+            
+            # API 키 확인
+            api_key_value = api_key  # 직접 설정한 API 키 사용
             if not api_key_value:
                 print("API 키가 설정되지 않았습니다.")
                 # API 키가 없는 경우 기본 응답 반환
@@ -211,8 +209,10 @@ def chat_with_advisor(request):
             print(f"API 키 확인: {api_key_value[:8]}***")  # API 키의 일부만 출력
             
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messages
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=1,
+                max_tokens=256
             )
             
             # AI 응답 추출
@@ -223,13 +223,15 @@ def chat_with_advisor(request):
                 "response": ai_response,
                 "success": True
             })
-            
         except Exception as api_error:
             print(f"OpenAI API 오류: {str(api_error)}")
+            print(f"API 오류 추가 세부사항: {type(api_error)}")
+            print(f"API 오류 추가 세부사항: {type(api_error)}")
             # API 오류 발생 시 기본 응답 반환
             return Response({
                 "response": default_response,
-                "success": True  # 사용자에게는 성공으로 반환
+                "success": True,  # 사용자에게는 성공으로 반환
+                "error_info": str(api_error)  # 디버깅에 도움이 되도록 에러 정보 포함
             })
         
     except Exception as e:

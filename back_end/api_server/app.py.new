@@ -1,0 +1,198 @@
+from flask import Flask, jsonify, request
+from bs4 import BeautifulSoup
+import requests
+import os
+import time
+from flask_cors import CORS
+from dotenv import load_dotenv
+
+# .env 파일 로드 - 절대 경로로 설정
+import os.path
+dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+load_dotenv(dotenv_path)
+
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+# OpenAI API 호출을 처리하는 프록시 엔드포인트
+@app.route('/chat', methods=['POST'])
+def chat():
+    try:
+        # 요청 본문에서 데이터 추출
+        data = request.json
+        messages = data.get('messages', [])
+        model = data.get('model', 'gpt-3.5-turbo')
+        temperature = data.get('temperature', 0.7)
+        max_tokens = data.get('max_tokens', 500)
+        
+        # 환경 변수에서 API 키 가져오기
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            print("[ERROR] API 키를 찾을 수 없습니다. .env 파일을 확인하세요.")
+            return jsonify({"error": "API key not provided in environment variables"}), 401
+
+        # 디버깅을 위한 환경 변수 출력 (키 일부 마스킹)
+        masked_key = api_key[:7] + "..." + api_key[-4:] if api_key else "None"
+        print(f"[DEBUG] OpenAI API Key (masked): {masked_key}")
+        print(f"[DEBUG] 로드된 .env 파일 경로: {dotenv_path}")
+        
+        # OpenAI 클라이언트 활용하여 API 호출
+        import openai
+        client = openai.OpenAI(api_key=api_key)
+        
+        # API 호출 시도 (재시도 로직 추가)
+        max_retries = 3
+        retry_delay = 1  # 초 단위
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    print(f"[INFO] API 호출 재시도 중... ({attempt}/{max_retries})")
+                    time.sleep(retry_delay * attempt)  # 점진적으로 대기 시간 증가
+                    
+                completion = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                
+                # 응답을 JSON 형태로 변환
+                response_data = {
+                    "id": completion.id,
+                    "object": completion.object,
+                    "created": completion.created,
+                    "model": completion.model,
+                    "choices": [
+                        {
+                            "index": choice.index,
+                            "message": {
+                                "role": choice.message.role,
+                                "content": choice.message.content
+                            },
+                            "finish_reason": choice.finish_reason
+                        } for choice in completion.choices
+                    ]
+                }
+                
+                return jsonify(response_data), 200
+                
+            except openai.RateLimitError as e:
+                print(f"[WARN] Rate limit 오류 발생, 재시도 {attempt+1}/{max_retries}")
+                last_error = e
+                continue
+            except Exception as e:
+                print(f"[ERROR] OpenAI API 호출 중 오류: {str(e)}")
+                # 인증 오류나 다른 치명적인 오류가 발생하면 즉시 반환
+                if isinstance(e, openai.AuthenticationError):
+                    return jsonify({"error": "Invalid API key"}), 401
+                last_error = e
+                break
+        
+        # 모든 재시도가 실패한 경우
+        if isinstance(last_error, openai.RateLimitError):
+            return jsonify({"error": "Rate limit exceeded. Please try again later."}), 429
+        else:
+            return jsonify({"error": str(last_error)}), 500
+        
+    except Exception as e:
+        print(f"[ERROR] 요청 처리 중 오류: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/stocks')
+def get_stocks():
+    url = "https://finance.naver.com/sise/sise_market_sum.naver"
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    res = requests.get(url, headers=headers)
+    res.encoding = 'euc-kr'
+    soup = BeautifulSoup(res.text, 'html.parser')
+
+    table = soup.select_one("table.type_2")
+    if table is None:
+        print("[ERROR] 테이블을 찾을 수 없음")
+        return jsonify({"error": "크롤링 실패"}), 500
+
+    rows = table.select("tr")
+    stocks = []
+
+    for row in rows:
+        cols = row.select("td")
+        if len(cols) < 11:
+            continue
+
+        name_tag = cols[1].select_one("a")
+        if not name_tag:
+            continue
+
+        try:
+            name = name_tag.text.strip()
+            code = name_tag['href'].split("code=")[-1]
+
+            price_raw = cols[2].text.strip().replace(",", "")
+            change_rate = cols[4].text.strip()
+            market_cap_raw = cols[6].text.strip().replace(",", "")
+            volume_raw = cols[9].text.strip().replace(",", "")
+
+            price = format(int(price_raw), ",") if price_raw.isdigit() else price_raw
+            market_cap = format(int(market_cap_raw), ",") if market_cap_raw.isdigit() else market_cap_raw
+            volume = format(float(volume_raw), ",.2f") if volume_raw.replace('.', '', 1).isdigit() else volume_raw
+
+            stock = {
+                "name": name,
+                "code": code,
+                "price": price,
+                "changeRate": change_rate,
+                "marketCap": market_cap,
+                "volume": volume,
+                "isFavorite": False
+            }
+            stocks.append(stock)
+
+        except Exception as e:
+            print(f"[WARN] 파싱 오류: {e}")
+            continue
+
+    return jsonify(stocks[:30])
+
+@app.route('/test_api', methods=['GET'])
+def test_api():
+    try:
+        api_key = request.args.get('api_key', '')
+        
+        # OpenAI API 테스트
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}'
+        }
+        
+        payload = {
+            'model': 'gpt-3.5-turbo',
+            'messages': [
+                {'role': 'user', 'content': 'Say Hello'}
+            ],
+            'max_tokens': 10
+        }
+        
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers=headers,
+            json=payload
+        )
+        
+        return jsonify({
+            'status_code': response.status_code,
+            'response': response.json() if response.status_code == 200 else response.text
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    return jsonify({"error": "Not found - 프론트엔드에서 처리해야 함"}), 404
+
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)
