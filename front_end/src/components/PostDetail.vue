@@ -54,9 +54,10 @@ import { isAuthenticated } from '../services/auth'
 
 const route = useRoute()
 const router = useRouter()
-const stockCode = route.params.code
-const postId = route.params.postId
-const commentKey = `comments_${stockCode}_${postId}`
+const stockCode = computed(() => route.params.code)
+const postId = computed(() => route.params.postId)
+const commentKey = computed(() => `comments_${stockCode.value}_${postId.value}`)
+
 
 const stockName = ref('') // ✅ 종목명 받아올 변수
 const post = ref(null)
@@ -76,11 +77,11 @@ onMounted(async () => {
   }
 
   // ✅ 게시글 데이터 로딩
-  const stored = localStorage.getItem(`post_${stockCode}_${postId}`)
+  const stored = localStorage.getItem(`post_${stockCode}_${postId.value}`)
   if (stored) {
     post.value = JSON.parse(stored)
   }
-  const storedComments = localStorage.getItem(commentKey)
+  const storedComments = localStorage.getItem(commentKey.value)
   if (storedComments) {
     const parsed = JSON.parse(storedComments)
     comments.value = parsed.filter(c => typeof c === 'object' && c.author && c.content)
@@ -142,11 +143,38 @@ const deleteComment = (index) => {
 const deletePost = () => {
   const confirmDelete = confirm('정말로 이 게시글을 삭제하시겠습니까?')
   if (!confirmDelete) return
-  localStorage.removeItem(`post_${stockCode}_${postId}`)
-  localStorage.removeItem(commentKey)
+  localStorage.removeItem(`post_${stockCode}_${postId.value}`)
+  localStorage.removeItem(commentKey.value)
   alert('게시글이 삭제되었습니다.')
   router.push(`/community/${stockCode}`)
 }
+import { watch } from 'vue'
+
+// 종목명 + 게시글 데이터 다시 불러오는 함수 정의
+const reloadPostData = async () => {
+  try {
+    const res = await axios.get('http://localhost:5000/stocks')
+    const match = res.data.find(item => item.code === route.params.code)
+    stockName.value = match?.name || route.params.code
+  } catch (err) {
+    console.error('종목명 다시 불러오기 실패', err)
+    stockName.value = route.params.code
+  }
+
+  const stored = localStorage.getItem(`post_${route.params.code}_${route.params.postId}`)
+  if (stored) {
+    post.value = JSON.parse(stored)
+  }
+  const storedComments = localStorage.getItem(`comments_${route.params.code}_${route.params.postId}`)
+  if (storedComments) {
+    const parsed = JSON.parse(storedComments)
+    comments.value = parsed.filter(c => typeof c === 'object' && c.author && c.content)
+  }
+}
+
+// ✅ watch 추가 - 코드(postId)가 변경되면 reloadPostData 재호출
+watch(() => [route.params.code, route.params.postId], reloadPostData)
+
 </script>
 
 
