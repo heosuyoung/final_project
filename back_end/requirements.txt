@@ -13,9 +13,9 @@ djangorestframework-simplejwt==5.3.1  # JWT 인증 지원
 Flask==3.0.2
 Flask-CORS==4.0.0
 idna==3.10
-json-log-formatter==0.5.2  # 로깅 포맷터 (JSON 형식의 로그 생성)
+#json-log-formatter==0.5.2  # 로깅 포맷터 (JSON 형식의 로그 생성)
 oauthlib==3.2.2
-openai==1.27.0  # OpenAI API 사용을 위한 패키지
+openai==0.28.1  # OpenAI API 사용을 위한 패키지
 pycparser==2.22
 PyJWT==2.10.1
 python3-openid==3.2.0

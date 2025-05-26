@@ -7,9 +7,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 import json
 import os
-from openai import OpenAI
+import openai
 
-# OpenAI API 키 직접 설정
+# OpenAI API 키 불러오기
+from django.conf import settings
 
 @api_view(['POST'])
 @permission_classes([AllowAny])  # 인증 없이 모든 사용자가 접근 가능하도록 설정 - AllowAny 사용
@@ -193,9 +194,8 @@ def chat_with_advisor(request):
                     messages.append({"role": msg["role"], "content": msg["content"]})
               # 사용자의 새 메시지 추가
             messages.append({"role": "user", "content": message})
-            
-            # API 키 확인
-            api_key_value = api_key  # 직접 설정한 API 키 사용
+              # API 키 확인
+            api_key_value = settings.OPENAI_API_KEY  # settings.py에서 가져온 API 키 사용
             if not api_key_value:
                 print("API 키가 설정되지 않았습니다.")
                 # API 키가 없는 경우 기본 응답 반환
@@ -203,20 +203,18 @@ def chat_with_advisor(request):
                     "response": default_response,
                     "success": True
                 })
-            
-            # OpenAI API 호출
-            client = OpenAI(api_key=api_key_value)
+              # OpenAI API 호출
+            openai.api_key = api_key_value
             print(f"API 키 확인: {api_key_value[:8]}***")  # API 키의 일부만 출력
             
-            response = client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=1,
                 max_tokens=256
             )
-            
-            # AI 응답 추출
-            ai_response = response.choices[0].message.content
+              # AI 응답 추출
+            ai_response = response.choices[0].message['content']
             print(f"AI 응답: {ai_response[:30]}...")  # 디버깅을 위한 로그 출력
             
             return Response({
