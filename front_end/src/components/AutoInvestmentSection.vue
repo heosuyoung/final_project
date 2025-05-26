@@ -10,7 +10,263 @@
       
       <div class="investment-layout">
         <div class="investment-visual">
-          <div class="investment-chart">
+          <!-- 투자 설정 탭 추가 -->
+          <div class="settings-tabs">
+            <button 
+              :class="['tab-btn', activeTab === 'savings' ? 'active' : '']" 
+              @click="activeTab = 'savings'">
+              저금 설정
+            </button>
+            <button 
+              :class="['tab-btn', activeTab === 'stocks' ? 'active' : '']" 
+              @click="activeTab = 'stocks'">
+              관심종목 매수
+            </button>
+            <button 
+              :class="['tab-btn', activeTab === 'status' ? 'active' : '']" 
+              @click="activeTab = 'status'">
+              투자 현황
+            </button>
+          </div>
+          
+          <!-- 저금 설정 탭 내용 -->
+          <div v-if="activeTab === 'savings'" class="tab-content">
+            <div class="savings-simulator">
+              <div class="simulator-header">일일 자동저축 시뮬레이션</div>
+              <div class="simulator-content">
+                <div class="simulator-input">
+                  <span class="input-label">일일 저축액</span>
+                  <div class="input-group">
+                    <input type="number" v-model="dailySavings" min="1000" step="1000" /> 원
+                  </div>
+                </div>
+                
+                <div class="payment-ratio-setting">
+                  <div class="setting-label">결제금액 저금 비율</div>
+                  <div class="ratio-slider">
+                    <input 
+                      type="range" 
+                      v-model="paymentRatio" 
+                      min="1" 
+                      max="20" 
+                      step="1" 
+                      class="slider" 
+                    />
+                    <div class="ratio-value">{{ paymentRatio }}%</div>
+                  </div>
+                  <div class="ratio-info">
+                    매달 평균 결제금액 <span class="highlight-text">{{ formatCurrency(monthlyPayment) }}</span>의 
+                    {{ paymentRatio }}% ({{ formatCurrency(monthlyPayment * paymentRatio / 100) }})가 저금됩니다.
+                  </div>
+                </div>
+                
+                <div class="simulator-result">
+                  <div class="result-item">
+                    <div class="result-label">1년 후</div>
+                    <div class="result-value">{{ formatCurrency(calculateSavings(1)) }}</div>
+                  </div>
+                  <div class="result-item highlight">
+                    <div class="result-label">3년 후</div>
+                    <div class="result-value">{{ formatCurrency(calculateSavings(3)) }}</div>
+                  </div>
+                  <div class="result-item">
+                    <div class="result-label">5년 후</div>
+                    <div class="result-value">{{ formatCurrency(calculateSavings(5)) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 관심종목 매수 설정 탭 내용 -->
+          <div v-if="activeTab === 'stocks'" class="tab-content">
+            <div class="stocks-setup">
+              <div class="setup-header">관심종목 자동 매수 설정</div>
+              <div class="setup-content">
+                <div class="favorite-stocks">
+                  <h4>관심종목 선택 <span class="selection-count">({{ selectedStocks.length }}/{{ favoriteStocks.length }})</span></h4>
+                  <div v-if="favoriteStocks.length === 0" class="empty-state">
+                    관심종목이 없습니다. 주식 페이지에서 관심종목을 추가해주세요.
+                  </div>
+                  <div v-else class="stocks-list">
+                    <div 
+                      v-for="stock in favoriteStocks" 
+                      :key="stock.code" 
+                      class="stock-item"
+                      :class="{ 'selected': selectedStocks.includes(stock.code) }"
+                      @click="toggleStockSelection(stock.code)"
+                    >
+                      <div class="stock-info">
+                        <div class="stock-name">{{ stock.name }}</div>
+                        <div class="stock-code">{{ stock.code }}</div>
+                      </div>
+                      <div class="stock-price">{{ stock.price }}원</div>
+                      <div class="selection-indicator">
+                        <div class="check-mark" v-if="selectedStocks.includes(stock.code)">✓</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-if="favoriteStocks.length > 0" class="stock-selection-buttons">
+                    <button @click="selectAllStocks" class="selection-btn">전체 선택</button>
+                    <button @click="clearStockSelection" class="selection-btn">선택 취소</button>
+                  </div>
+                </div>
+                
+                <div class="purchase-settings">
+                  <div class="setting-group">
+                    <label class="setting-label">매수 주기</label>
+                    <div class="select-wrapper">
+                      <select v-model="purchaseInterval">
+                        <option value="daily">매일</option>
+                        <option value="weekly">매주</option>
+                        <option value="monthly">매월</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div class="setting-group">
+                    <label class="setting-label">매수 금액</label>
+                    <div class="input-group">
+                      <input type="number" v-model="purchaseAmount" min="10000" step="10000" /> 원
+                    </div>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="setting-label">시작일</label>
+                    <div class="input-group">
+                      <input type="date" v-model="purchaseStartDate" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="setting-summary">
+                  <div class="summary-title">자동 매수 요약</div>
+                  <div class="summary-content">
+                    <p>
+                      <b>시작일</b>: {{ formatDate(purchaseStartDate) }} 부터
+                    </p>
+                    <p>
+                      선택된 <span class="highlight-text">{{ selectedStocks.length }}개 종목</span>에 
+                      <span class="highlight-text">{{ purchaseIntervalLabel }}</span> 
+                      <span class="highlight-text">{{ formatCurrency(purchaseAmount) }}원</span>씩
+                      {{ selectedStocks.length > 0 ? '분산 투자됩니다.' : '투자할 예정입니다.' }}
+                    </p>
+                    <p>
+                      <b>연간 총 투자금액</b>: {{ formatCurrency(calculateAnnualInvestment()) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 투자 현황 탭 내용 -->
+          <div v-if="activeTab === 'status'" class="tab-content">
+            <div class="investment-status">
+              <div class="status-header">투자 현황</div>
+              <div class="status-content">
+                <div class="status-summary">
+                  <div class="status-item">
+                    <div class="status-label">총 저축액</div>
+                    <div class="status-value">{{ formatCurrency(totalSavings) }}</div>
+                    <div class="status-percent">{{ calculateAssetPercent(totalSavings) }}%</div>
+                  </div>
+                  <div class="status-item">
+                    <div class="status-label">총 주식 투자액</div>
+                    <div class="status-value">{{ formatCurrency(totalStockInvestment) }}</div>
+                    <div class="status-percent">{{ calculateAssetPercent(totalStockInvestment) }}%</div>
+                  </div>
+                  <div class="status-item highlight">
+                    <div class="status-label">총 자산</div>
+                    <div class="status-value">{{ formatCurrency(totalAssets) }}</div>
+                    <div class="status-progress">
+                      <div class="progress-bar">
+                        <div class="progress-fill savings" :style="`width: ${calculateAssetPercent(totalSavings)}%`"></div>
+                        <div class="progress-fill stocks" :style="`width: ${calculateAssetPercent(totalStockInvestment)}%`"></div>
+                      </div>
+                      <div class="progress-legend">
+                        <div class="legend-item">
+                          <div class="legend-color savings-color"></div>
+                          <span>저축</span>
+                        </div>
+                        <div class="legend-item">
+                          <div class="legend-color stocks-color"></div>
+                          <span>주식</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="investment-analytics">
+                  <div class="analytics-item">
+                    <h4>월간 자동저축 현황</h4>
+                    <div class="analytics-value">{{ formatCurrency(monthlyAutoSavings) }}</div>
+                    <div class="analytics-detail">
+                      <div>일일저축: {{ formatCurrency(dailySavings * 30) }}</div>
+                      <div>결제저금: {{ formatCurrency(monthlyPayment * paymentRatio / 100) }}</div>
+                    </div>
+                  </div>
+                  
+                  <div class="analytics-item">
+                    <h4>월간 주식매수 현황</h4>
+                    <div class="analytics-value">{{ formatCurrency(monthlyStockPurchase) }}</div>
+                    <div class="analytics-detail">
+                      <div>종목수: {{ selectedStocks.length }}개</div>
+                      <div>{{ purchaseIntervalLabel }}: {{ formatCurrency(purchaseAmount) }}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="stocks-portfolio">
+                  <h4>주식 포트폴리오 <span class="portfolio-count">({{ portfolioStocks.length }} 종목)</span></h4>
+                  <div v-if="portfolioStocks.length === 0" class="empty-state">
+                    아직 자동 매수한 주식이 없습니다.
+                  </div>
+                  <div v-else>
+                    <div class="portfolio-chart">
+                      <div class="pie-chart" :style="{ background: createPieChartGradient }">
+                      </div>
+                      <div class="chart-labels">
+                        <div v-for="segment in getPieChartSegments()" :key="segment.code" class="chart-label-item">
+                          <div class="label-color" :style="`background-color: ${segment.color}`"></div>
+                          <div class="label-name">{{ segment.name }}</div>
+                          <div class="label-value">{{ segment.percent }}%</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="portfolio-list">
+                      <div v-for="stock in portfolioStocks" :key="stock.code" class="portfolio-item">
+                        <div class="portfolio-stock-info">
+                          <div class="stock-name">{{ stock.name }}</div>
+                          <div class="stock-code">{{ stock.code }}</div>
+                        </div>
+                        <div class="portfolio-details">
+                          <div class="purchase-info">
+                            <div>보유수량: <span class="highlight-text">{{ stock.quantity }}주</span></div>
+                            <div>평균단가: {{ stock.avgPrice }}원</div>
+                            <div>매수금액: {{ formatCurrency(parseInt(stock.avgPrice.replace(/,/g, '')) * stock.quantity) }}</div>
+                          </div>
+                          <div class="current-info">
+                            <div>현재가: {{ stock.currentPrice }}원</div>
+                            <div>평가금액: {{ formatCurrency(parseInt(stock.currentPrice.replace(/,/g, '')) * stock.quantity) }}</div>
+                            <div>수익률: <span :class="stock.profitRate >= 0 ? 'profit-up' : 'profit-down'">
+                              {{ stock.profitRate >= 0 ? '+' : '' }}{{ stock.profitRate }}%
+                            </span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 투자 차트 (저금 탭일 때만 표시) -->
+          <div v-if="activeTab === 'savings'" class="investment-chart">
             <div class="chart-container">
               <div class="chart-bar chart-bar-1"></div>
               <div class="chart-bar chart-bar-2"></div>
@@ -30,32 +286,6 @@
               </div>
             </div>
           </div>
-          
-          <div class="savings-simulator">
-            <div class="simulator-header">일일 자동저축 시뮬레이션</div>
-            <div class="simulator-content">
-              <div class="simulator-input">
-                <span class="input-label">일일 저축액</span>
-                <div class="input-group">
-                  <input type="number" value="5000" disabled /> 원
-                </div>
-              </div>
-              <div class="simulator-result">
-                <div class="result-item">
-                  <div class="result-label">1년 후</div>
-                  <div class="result-value">1,825,000원</div>
-                </div>
-                <div class="result-item highlight">
-                  <div class="result-label">3년 후</div>
-                  <div class="result-value">5,475,000원</div>
-                </div>
-                <div class="result-item">
-                  <div class="result-label">5년 후</div>
-                  <div class="result-value">9,125,000원</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         
         <div class="investment-features">
@@ -64,8 +294,8 @@
               <img src="/piggy-bank.png" alt="저금통 아이콘" />
             </div>
             <div class="feature-content">
-              <h3>매일 자동투자</h3>
-              <p>커피 한 잔 값으로 매일 꾸준히 투자하여 목돈을 만들어보세요.</p>
+              <h3>결제 금액 자동 저금</h3>
+              <p>결제할 때마다 일정 비율을 자동으로 저금해 소비하면서도 저축하는 습관을 만들어보세요.</p>
             </div>
           </div>
           
@@ -74,8 +304,8 @@
               <img src="/investment-graph.png" alt="투자 그래프 아이콘" />
             </div>
             <div class="feature-content">
-              <h3>맞춤형 포트폴리오</h3>
-              <p>투자 목표와 기간에 따라 최적의 포트폴리오를 구성해 드립니다.</p>
+              <h3>관심종목 자동 매수</h3>
+              <p>설정한 주기와 금액에 따라 관심종목을 자동으로 매수하여 장기투자 전략을 실천하세요.</p>
             </div>
           </div>
           
@@ -84,20 +314,408 @@
               <img src="/easy-setup.png" alt="간편 설정 아이콘" />
             </div>
             <div class="feature-content">
-              <h3>간편한 설정</h3>
-              <p>복잡한 절차 없이 몇 번의 클릭만으로 자동투자를 시작할 수 있습니다.</p>
+              <h3>한눈에 보는 투자현황</h3>
+              <p>총 자산 및 포트폴리오 수익률을 한눈에 확인하고 더 나은 투자 결정을 내리세요.</p>
             </div>
           </div>
           
-          <button class="cta-button">자동투자 시작하기</button>
+          <button class="cta-button" @click="startAutoInvestment">자동투자 시작하기</button>
         </div>
+      </div>
+    </div>
+    
+    <!-- 자동투자 설정 완료 모달 -->
+    <div v-if="showSuccessModal" class="modal-overlay">
+      <div class="success-modal">
+        <div class="modal-icon">✓</div>
+        <h3>자동투자 설정 완료!</h3>
+        <p>설정하신 내용대로 자동투자가 시작되었습니다.</p>
+        <button @click="showSuccessModal = false" class="close-modal-btn">확인</button>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-// 컴포넌트 로직이 필요하면 여기에 추가
+import { ref, computed, onMounted, watch } from 'vue';
+
+// 현재 활성화된 탭
+const activeTab = ref('savings');
+
+// 자동저축 관련 상태
+const dailySavings = ref(5000);
+const paymentRatio = ref(5);
+const monthlyPayment = ref(500000); // 월 평균 결제금액
+
+// 관심종목 관련 상태
+const favoriteStocks = ref([]);
+const selectedStocks = ref([]);
+const purchaseInterval = ref('monthly');
+const purchaseAmount = ref(50000);
+const purchaseStartDate = ref(new Date().toISOString().split('T')[0]); // 오늘 날짜를 기본값으로 설정
+
+// 자동투자 현황 관련 상태
+const portfolioStocks = ref([]);
+const monthlyAutoSavings = ref(0);
+const monthlyStockPurchase = ref(0);
+const showSuccessModal = ref(false);
+const investmentStartDate = ref(new Date().setMonth(new Date().getMonth() - 6)); // 6개월 전 시작 가정
+
+// 총 저축액 계산 (computed로 변경)
+const totalSavings = computed(() => {
+  // 매월 저축금액 * 투자 개월 수
+  const months = Math.max(1, Math.floor((new Date() - new Date(investmentStartDate.value)) / (30 * 24 * 60 * 60 * 1000)));
+  return monthlyAutoSavings.value * months;
+});
+
+// 총 주식 투자액 계산 (computed로 변경)
+const totalStockInvestment = computed(() => {
+  // 매월 주식매수금액 * 투자 개월 수
+  const months = Math.max(1, Math.floor((new Date() - new Date(investmentStartDate.value)) / (30 * 24 * 60 * 60 * 1000)));
+  return monthlyStockPurchase.value * months;
+});
+
+// 구매 주기 표시 텍스트
+const purchaseIntervalLabel = computed(() => {
+  switch (purchaseInterval.value) {
+    case 'daily': return '매일';
+    case 'weekly': return '매주';
+    case 'monthly': return '매월';
+    default: return '';
+  }
+});
+
+// 총 자산 계산
+const totalAssets = computed(() => {
+  return totalSavings.value + totalStockInvestment.value;
+});
+
+// 저축액 계산 함수
+const calculateSavings = (years) => {
+  // 일일 저축액 * 365일 * 연도 + 평균 결제액 * 결제 비율 * 12개월 * 연도
+  const baseAmount = dailySavings.value * 365 * years;
+  const paymentAmount = monthlyPayment.value * (paymentRatio.value / 100) * 12 * years;
+  return baseAmount + paymentAmount;
+};
+
+// 금액 포맷 함수
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('ko-KR', { 
+    style: 'currency', 
+    currency: 'KRW',
+    maximumFractionDigits: 0
+  }).format(amount);
+};
+
+// 관심종목 선택 토글
+const toggleStockSelection = (code) => {
+  const index = selectedStocks.value.indexOf(code);
+  if (index === -1) {
+    selectedStocks.value.push(code);
+  } else {
+    selectedStocks.value.splice(index, 1);
+  }
+};
+
+// 차트 스타일 생성
+const getPieChartSegments = () => {
+  if (portfolioStocks.value.length === 0) return [];
+
+  // 색상 배열 (더 다양하고 구분되는 색상으로 확장)
+  const colors = [
+    '#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0', '#FF5722', 
+    '#009688', '#3F51B5', '#CDDC39', '#795548', '#607D8B', '#00BCD4'
+  ];
+  
+  // 각 종목의 가치 계산
+  const stockValues = portfolioStocks.value.map(stock => {
+    const price = parseInt(stock.currentPrice.replace(/,/g, ''));
+    return {
+      code: stock.code,
+      name: stock.name,
+      value: price * stock.quantity
+    };
+  });
+  
+  // 총 포트폴리오 가치 계산
+  const totalValue = stockValues.reduce((sum, stock) => sum + stock.value, 0);
+  
+  // 각 종목의 비율과 각도 계산 후 결과 배열 생성
+  let cumulativePercent = 0;
+  const segments = stockValues.map((stock, index) => {
+    // 이 종목의 비율 (0-100%)
+    const percent = totalValue > 0 ? (stock.value / totalValue * 100) : 0;
+    
+    // 시작 및 종료 각도 계산
+    const startPercent = cumulativePercent;
+    cumulativePercent += percent;
+    
+    return {
+      code: stock.code,
+      name: stock.name,
+      color: colors[index % colors.length],
+      percent: Math.round(percent)
+    };
+  });
+
+  return segments;
+};
+
+// 전체 파이 차트를 하나의 conic gradient로 생성
+const createPieChartGradient = computed(() => {
+  if (portfolioStocks.value.length === 0) return 'conic-gradient(#f0f0f0 0%, #f0f0f0 100%)';
+  
+  // 색상 배열
+  const colors = [
+    '#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0', '#FF5722', 
+    '#009688', '#3F51B5', '#CDDC39', '#795548', '#607D8B', '#00BCD4'
+  ];
+  
+  // 각 종목의 가치 계산
+  const stockValues = portfolioStocks.value.map(stock => {
+    const price = parseInt(stock.currentPrice.replace(/,/g, ''));
+    return price * stock.quantity;
+  });
+  
+  // 총 포트폴리오 가치 계산
+  const totalValue = stockValues.reduce((sum, value) => sum + value, 0);
+  
+  // 각 종목의 비율과 각도 계산 후 conic-gradient 속성 값 생성
+  let cumulativePercent = 0;
+  let gradientString = 'conic-gradient(';
+  
+  portfolioStocks.value.forEach((stock, index) => {
+    const value = stockValues[index];
+    const percent = totalValue > 0 ? (value / totalValue * 100) : 0;
+    const color = colors[index % colors.length];
+    
+    // 시작 위치
+    gradientString += `${color} ${cumulativePercent}%, `;
+    
+    // 종료 위치 (다음 세그먼트의 시작)
+    cumulativePercent += percent;
+    gradientString += `${color} ${cumulativePercent}%, `;
+  });
+  
+  // 마지막 콤마와 공백 제거 후 닫기
+  gradientString = gradientString.slice(0, -2);
+  gradientString += ')';
+  
+  return gradientString;
+});
+
+// These functions are no longer needed as we're using getPieChartSegments and createPieChartGradient
+
+// 포트폴리오 업데이트
+const updatePortfolio = () => {
+  if (selectedStocks.value.length === 0) {
+    // 선택된 종목이 없으면 포트폴리오를 비움
+    portfolioStocks.value = [];
+    return;
+  }
+  
+  // 선택된 종목만 필터링하여 포트폴리오에 추가
+  const selectedFavorites = favoriteStocks.value.filter(stock => 
+    selectedStocks.value.includes(stock.code)
+  );
+  
+  // 새로운 포트폴리오 데이터 생성
+  portfolioStocks.value = selectedFavorites.map(stock => {
+    // 기존 데이터가 있으면 유지, 없으면 새로 생성
+    const existingStock = portfolioStocks.value.find(s => s.code === stock.code);
+    
+    if (existingStock) {
+      return existingStock;
+    } else {
+      // 새 종목 추가 시 랜덤 데이터 생성 (실제로는 API나 DB에서)
+      const quantity = Math.floor(Math.random() * 10) + 1;
+      const avgPrice = parseInt(stock.price.replace(/,/g, ''));
+      const currentPrice = avgPrice * (1 + (Math.random() * 0.2 - 0.1));
+      const profitRate = parseFloat(((currentPrice / avgPrice - 1) * 100).toFixed(2));
+      
+      return {
+        code: stock.code,
+        name: stock.name,
+        quantity: quantity,
+        avgPrice: avgPrice.toLocaleString(),
+        currentPrice: Math.round(currentPrice).toLocaleString(),
+        profitRate: profitRate
+      };
+    }
+  });
+  
+  // 포트폴리오 정보 저장
+  localStorage.setItem('portfolioStocks', JSON.stringify(portfolioStocks.value));
+};
+
+// 전체 관심종목 선택
+const selectAllStocks = () => {
+  selectedStocks.value = favoriteStocks.value.map(stock => stock.code);
+};
+
+// 선택된 관심종목 취소
+const clearStockSelection = () => {
+  selectedStocks.value = [];
+};
+
+// 자동투자 시작
+const startAutoInvestment = () => {
+  // 설정 데이터 저장
+  localStorage.setItem('autoInvestSettings', JSON.stringify({
+    dailySavings: dailySavings.value,
+    paymentRatio: paymentRatio.value,
+    selectedStocks: selectedStocks.value,
+    purchaseInterval: purchaseInterval.value,
+    purchaseAmount: purchaseAmount.value,
+    purchaseStartDate: purchaseStartDate.value
+  }));
+  
+  // 월간 저축액 및 주식매수액 업데이트
+  monthlyAutoSavings.value = dailySavings.value * 30 + (monthlyPayment.value * paymentRatio.value / 100);
+  
+  // 매수 주기에 따른 월간 주식매수액 계산
+  switch (purchaseInterval.value) {
+    case 'daily':
+      monthlyStockPurchase.value = purchaseAmount.value * 30;
+      break;
+    case 'weekly':
+      monthlyStockPurchase.value = purchaseAmount.value * 4;
+      break;
+    case 'monthly':
+      monthlyStockPurchase.value = purchaseAmount.value;
+      break;
+  }
+  
+  // 포트폴리오 업데이트 (선택된 종목만 포트폴리오에 추가)
+  updatePortfolio();
+  
+  // 투자 시작일 저장 (처음 설정하는 경우)
+  if (!localStorage.getItem('investmentStartDate')) {
+    investmentStartDate.value = new Date().getTime();
+    localStorage.setItem('investmentStartDate', investmentStartDate.value.toString());
+  }
+  
+  // 성공 모달 표시
+  showSuccessModal.value = true;
+};
+
+// 연간 총 투자금액 계산
+const calculateAnnualInvestment = () => {
+  switch (purchaseInterval.value) {
+    case 'daily':
+      return purchaseAmount.value * 365;
+    case 'weekly':
+      return purchaseAmount.value * 52;
+    case 'monthly':
+      return purchaseAmount.value * 12;
+    default:
+      return 0;
+  }
+};
+
+// 날짜 포맷 함수
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('ko-KR', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  }).format(date);
+};
+
+// 자산 비율 계산
+const calculateAssetPercent = (value) => {
+  if (totalAssets.value === 0) return 0;
+  return Math.round((value / totalAssets.value) * 100);
+};
+
+// 컴포넌트 마운트 시 데이터 로드
+onMounted(() => {
+  // 저장된 설정 불러오기
+  const savedSettings = JSON.parse(localStorage.getItem('autoInvestSettings') || 'null');
+  if (savedSettings) {
+    dailySavings.value = savedSettings.dailySavings || 5000;
+    paymentRatio.value = savedSettings.paymentRatio || 5;
+    selectedStocks.value = savedSettings.selectedStocks || [];
+    purchaseInterval.value = savedSettings.purchaseInterval || 'monthly';
+    purchaseAmount.value = savedSettings.purchaseAmount || 50000;
+  }
+  
+  // 월간 자동저축 및 주식매수 현황 계산
+  monthlyAutoSavings.value = dailySavings.value * 30 + (monthlyPayment.value * paymentRatio.value / 100);
+  
+  // 매수 주기에 따른 월간 주식매수액 계산
+  switch (purchaseInterval.value) {
+    case 'daily':
+      monthlyStockPurchase.value = purchaseAmount.value * 30;
+      break;
+    case 'weekly':
+      monthlyStockPurchase.value = purchaseAmount.value * 4;
+      break;
+    case 'monthly':
+      monthlyStockPurchase.value = purchaseAmount.value;
+      break;
+  }
+  
+  // 관심종목 불러오기
+  try {
+    const storedFavorites = JSON.parse(localStorage.getItem('favorite_stocks') || '[]');
+    favoriteStocks.value = storedFavorites;
+    
+    // 저장된 포트폴리오 정보 불러오기
+    const savedPortfolio = JSON.parse(localStorage.getItem('portfolioStocks') || 'null');
+    if (savedPortfolio) {
+      portfolioStocks.value = savedPortfolio;
+      selectedStocks.value = portfolioStocks.value.map(stock => stock.code);
+    } else if (storedFavorites.length > 0) {
+      // 저장된 포트폴리오가 없으면 관심종목에서 초기 포트폴리오 생성
+      updatePortfolio();
+    }
+    
+    // 저장된 투자 시작일 불러오기
+    const savedStartDate = localStorage.getItem('investmentStartDate');
+    if (savedStartDate) {
+      investmentStartDate.value = parseInt(savedStartDate);
+    }
+  } catch (error) {
+    console.error('관심종목 로드 오류:', error);
+    favoriteStocks.value = [];
+  }
+  
+  // 투자 시작일 불러오기
+  const savedStartDate = localStorage.getItem('investmentStartDate');
+  if (savedStartDate) {
+    investmentStartDate.value = new Date(parseInt(savedStartDate)).getTime();
+  }
+});
+
+// 관련 값 변경 시 월간 자동저축 및 주식매수 현황 업데이트
+// 주요값 변경 시 자동저축 금액 업데이트
+watch([dailySavings, paymentRatio], () => {
+  monthlyAutoSavings.value = dailySavings.value * 30 + (monthlyPayment.value * paymentRatio.value / 100);
+});
+
+// 매수 주기나 금액 변경 시 주식매수액 업데이트
+watch([purchaseInterval, purchaseAmount], () => {
+  switch (purchaseInterval.value) {
+    case 'daily':
+      monthlyStockPurchase.value = purchaseAmount.value * 30;
+      break;
+    case 'weekly':
+      monthlyStockPurchase.value = purchaseAmount.value * 4;
+      break;
+    case 'monthly':
+      monthlyStockPurchase.value = purchaseAmount.value;
+      break;
+  }
+});
+
+// 선택된 종목 변경시 포트폴리오 업데이트
+watch(selectedStocks, (newVal) => {
+  if (activeTab.value === 'stocks' && newVal.length > 0) {
+    updatePortfolio();
+  }
+}, { deep: true });
 </script>
 
 <style scoped>
@@ -330,6 +948,70 @@
   color: #333;
 }
 
+/* 포트폴리오 차트 스타일 */
+.portfolio-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.pie-chart {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.pie-chart:hover {
+  transform: scale(1.05);
+}
+
+.chart-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.chart-label-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  background-color: #f8f8f8;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+.chart-label-item:hover {
+  background-color: #efefef;
+  transform: translateY(-2px);
+}
+
+.label-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.label-name {
+  font-weight: 500;
+  color: #444;
+}
+
+.label-value {
+  font-weight: 600;
+  color: #28a745;
+}
+
 .result-item.highlight {
   background-color: rgba(40, 167, 69, 0.1);
   border: 1px solid rgba(40, 167, 69, 0.2);
@@ -415,43 +1097,633 @@
   box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
 }
 
-/* 반응형 디자인 */
-@media (max-width: 992px) {
-  .investment-layout {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-  }
-  
-  .investment-visual {
-    order: 1;
-  }
-  
-  .investment-features {
-    order: 0;
-  }
+/* 투자 현황 탭 스타일 추가 */
+.investment-status {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 }
 
-@media (max-width: 576px) {
-  .section-title {
-    font-size: 1.8rem;
-  }
-  
-  .section-desc {
-    font-size: 1rem;
-  }
-  
-  .simulator-result {
+.status-header {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.status-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.status-item {
+  background-color: white;
+  padding: 1.2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.status-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.status-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.status-percent {
+  font-size: 0.9rem;
+  color: #28a745;
+  font-weight: 500;
+}
+
+.status-progress {
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  height: 12px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: width 0.5s ease;
+}
+
+.progress-fill.savings {
+  background-color: #28a745;
+}
+
+.progress-fill.stocks {
+  background-color: #007bff;
+  left: auto;
+  right: 0;
+}
+
+.progress-legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.savings-color {
+  background-color: #28a745;
+}
+
+.stocks-color {
+  background-color: #007bff;
+}
+
+.investment-analytics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.analytics-item {
+  background-color: white;
+  padding: 1.2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.analytics-item h4 {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.analytics-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #28a745;
+  margin-bottom: 0.8rem;
+}
+
+.analytics-detail {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.pie-chart {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.pie-segment {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(0deg);
+}
+
+.portfolio-chart {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chart-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.chart-label-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.label-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.label-value {
+  font-weight: 500;
+}
+
+/* 추가된 기능 스타일 */
+.ratio-info {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.highlight-text {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.payment-ratio-setting {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.setting-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 0.5rem;
+}
+
+.ratio-slider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #28a745;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: #218838;
+  transform: scale(1.1);
+}
+
+.ratio-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #28a745;
+  width: 40px;
+  text-align: center;
+}
+
+.stocks-setup {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+.setup-header {
+  background-color: #28a745;
+  color: white;
+  padding: 1rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.setup-content {
+  padding: 1.5rem;
+}
+
+.favorite-stocks {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1.5rem;
+}
+
+.favorite-stocks h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.selection-count {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: normal;
+}
+
+.empty-state {
+  background-color: #f9faf7;
+  padding: 1.5rem;
+  text-align: center;
+  color: #666;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.stocks-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.stock-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.stock-item:last-child {
+  border-bottom: none;
+}
+
+.stock-item:hover {
+  background-color: #f8faff;
+}
+
+.stock-item.selected {
+  background-color: rgba(40, 167, 69, 0.05);
+}
+
+.stock-info {
+  flex: 1;
+}
+
+.stock-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.stock-code {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.stock-price {
+  font-size: 0.9rem;
+  color: #333;
+  margin-right: 1rem;
+}
+
+.selection-indicator {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-mark {
+  color: #28a745;
+  font-size: 0.8rem;
+}
+
+.stock-selection-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.selection-btn {
+  background: none;
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.selection-btn:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.purchase-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #333;
+  appearance: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") no-repeat;
+  background-position: calc(100% - 10px) center;
+  padding-right: 30px;
+}
+
+.setting-summary {
+  background-color: #f9faf7;
+  padding: 1.2rem;
+  border-radius: 8px;
+}
+
+.summary-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.8rem;
+}
+
+.summary-content {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+.summary-content p {
+  margin: 0.5rem 0;
+}
+
+.portfolio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.portfolio-item {
+  background-color: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1.2rem;
+}
+
+.portfolio-stock-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.portfolio-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.purchase-info, .current-info {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #666;
+}
+
+.profit-up {
+  color: #d63031;
+  font-weight: 500;
+}
+
+.profit-down {
+  color: #0984e3;
+  font-weight: 500;
+}
+
+.portfolio-count {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: normal;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.success-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.modal-icon {
+  background-color: #28a745;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  margin: 0 auto 1.5rem;
+}
+
+.success-modal h3 {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.success-modal p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.close-modal-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.close-modal-btn:hover {
+  background-color: #218838;
+}
+
+/* 새로 추가된 스타일 */
+.stocks-portfolio h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-item.highlight {
+  grid-column: span 2;
+}
+
+.pie-chart {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+.chart-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.chart-label-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.label-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.label-value {
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .purchase-settings {
     grid-template-columns: 1fr;
   }
   
-  .feature-item {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  .status-summary {
+    grid-template-columns: 1fr;
   }
   
-  .feature-content {
-    text-align: center;
+  .status-item.highlight {
+    grid-column: auto;
+  }
+  
+  .investment-analytics {
+    grid-template-columns: 1fr;
+  }
+  
+  .portfolio-details {
+    grid-template-columns: 1fr;
   }
 }
 </style>
