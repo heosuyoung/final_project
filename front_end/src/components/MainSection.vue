@@ -31,12 +31,8 @@
     
     <FavoriteSlide />    <!-- 시장 개요 섹션 추가 -->
     <MarketOverview />
-    
-    <!-- AI 상담 섹션 추가 -->
+      <!-- AI 상담 섹션 추가 -->
     <AIAdvisorSection />
-    
-    <!-- 뉴스 섹션 추가 -->
-    <NewsSection />
   </section>
 </template>
 
@@ -45,7 +41,6 @@ import { useRouter } from 'vue-router';
 import FavoriteSlide from './FavoriteSlide.vue';
 import MarketOverview from './MarketOverview.vue';
 import AIAdvisorSection from './AIAdvisorSection.vue';
-import NewsSection from './NewsSection.vue';
 
 // 라우터 설정
 const router = useRouter();

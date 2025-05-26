@@ -56,8 +56,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 const router = useRouter();
 
@@ -93,69 +94,260 @@ const marketIndices = ref([
   }
 ]);
 
-// 환율 데이터
+// 환율 데이터 (실시간으로 업데이트됨)
 const currencies = ref([
   {
     name: 'USD/KRW',
-    value: '1,338.50',
-    change: '3.30',
-    changePercent: '0.25%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: true
   },
   {
     name: 'EUR/KRW',
-    value: '1,456.20',
-    change: '-2.10',
-    changePercent: '-0.15%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: false
   },
   {
     name: 'JPY/KRW',
-    value: '8.75',
-    change: '0.09',
-    changePercent: '1.04%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: true
   },
   {
     name: 'CNY/KRW',
-    value: '184.60',
-    change: '-0.55',
-    changePercent: '-0.30%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: false
   }
 ]);
 
-// 상품 가격 데이터
+// 상품 가격 데이터 (실시간으로 업데이트됨)
 const commodities = ref([
   {
     name: '금(USD/oz)',
-    value: '2,345.60',
-    change: '17.50',
-    changePercent: '0.75%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: true
   },
   {
     name: '은(USD/oz)',
-    value: '28.40',
-    change: '-0.09',
-    changePercent: '-0.32%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: false
   },
   {
     name: 'WTI(USD/배럴)',
-    value: '76.82',
-    change: '1.25',
-    changePercent: '1.65%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: true
   },
   {
     name: '천연가스(USD/MMBtu)',
-    value: '2.48',
-    change: '-0.05',
-    changePercent: '-1.98%',
+    value: '0.00',
+    change: '0.00',
+    changePercent: '0.00%',
     isUp: false
   }
 ]);
+
+// 실시간 환율 데이터 가져오기
+const fetchExchangeRates = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:5000/exchange-rates');
+    if (response.data.success) {
+      const data = response.data.data;
+      
+      // 환율 데이터 업데이트
+      currencies.value = [
+        {
+          name: 'USD/KRW',
+          value: parseFloat(data.USD.rate).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.USD.change_amount,
+          changePercent: `${data.USD.change >= 0 ? '+' : ''}${data.USD.change.toFixed(2)}%`,
+          isUp: data.USD.change >= 0
+        },
+        {
+          name: 'EUR/KRW',
+          value: parseFloat(data.EUR.rate).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.EUR.change_amount,
+          changePercent: `${data.EUR.change >= 0 ? '+' : ''}${data.EUR.change.toFixed(2)}%`,
+          isUp: data.EUR.change >= 0
+        },
+        {
+          name: 'JPY/KRW',
+          value: parseFloat(data.JPY.rate).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.JPY.change_amount,
+          changePercent: `${data.JPY.change >= 0 ? '+' : ''}${data.JPY.change.toFixed(2)}%`,
+          isUp: data.JPY.change >= 0
+        },
+        {
+          name: 'CNY/KRW',
+          value: parseFloat(data.CNY.rate).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.CNY.change_amount,
+          changePercent: `${data.CNY.change >= 0 ? '+' : ''}${data.CNY.change.toFixed(2)}%`,
+          isUp: data.CNY.change >= 0
+        }
+      ];
+      
+      console.log('MarketOverview - 실시간 환율 데이터 업데이트 완료:', data);
+    }
+  } catch (error) {
+    console.error('MarketOverview - 환율 데이터 가져오기 실패:', error);
+    // 기본값으로 복원
+    currencies.value = [
+      {
+        name: 'USD/KRW',
+        value: '1,338.50',
+        change: '3.30',
+        changePercent: '0.25%',
+        isUp: true
+      },
+      {
+        name: 'EUR/KRW',
+        value: '1,456.20',
+        change: '-2.10',
+        changePercent: '-0.15%',
+        isUp: false
+      },
+      {
+        name: 'JPY/KRW',
+        value: '8.75',
+        change: '0.09',
+        changePercent: '1.04%',
+        isUp: true
+      },
+      {
+        name: 'CNY/KRW',
+        value: '184.60',
+        change: '-0.55',
+        changePercent: '-0.30%',
+        isUp: false
+      }
+    ];
+  }
+};
+
+// 실시간 상품 가격 데이터 가져오기
+const fetchCommoditiesData = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:5000/commodities');
+    if (response.data.success) {
+      const data = response.data.data;
+      
+      // 상품 가격 데이터 업데이트
+      commodities.value = [
+        {
+          name: '금(USD/oz)',
+          value: parseFloat(data.gold.price).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.gold.change_amount,
+          changePercent: `${data.gold.change >= 0 ? '+' : ''}${data.gold.change.toFixed(2)}%`,
+          isUp: data.gold.change >= 0
+        },
+        {
+          name: '은(USD/oz)',
+          value: parseFloat(data.silver.price).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.silver.change_amount,
+          changePercent: `${data.silver.change >= 0 ? '+' : ''}${data.silver.change.toFixed(2)}%`,
+          isUp: data.silver.change >= 0
+        },
+        {
+          name: 'WTI(USD/배럴)',
+          value: parseFloat(data.crude_oil.price).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.crude_oil.change_amount,
+          changePercent: `${data.crude_oil.change >= 0 ? '+' : ''}${data.crude_oil.change.toFixed(2)}%`,
+          isUp: data.crude_oil.change >= 0
+        },
+        {
+          name: '천연가스(USD/MMBtu)',
+          value: parseFloat(data.natural_gas.price).toLocaleString('ko-KR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }),
+          change: data.natural_gas.change_amount,
+          changePercent: `${data.natural_gas.change >= 0 ? '+' : ''}${data.natural_gas.change.toFixed(2)}%`,
+          isUp: data.natural_gas.change >= 0
+        }
+      ];
+      
+      console.log('MarketOverview - 실시간 상품 가격 데이터 업데이트 완료:', data);
+    }
+  } catch (error) {
+    console.error('MarketOverview - 상품 가격 데이터 가져오기 실패:', error);
+    // 기본값으로 복원
+    commodities.value = [
+      {
+        name: '금(USD/oz)',
+        value: '2,345.60',
+        change: '17.50',
+        changePercent: '0.75%',
+        isUp: true
+      },
+      {
+        name: '은(USD/oz)',
+        value: '28.40',
+        change: '-0.09',
+        changePercent: '-0.32%',
+        isUp: false
+      },
+      {
+        name: 'WTI(USD/배럴)',
+        value: '76.82',
+        change: '1.25',
+        changePercent: '1.65%',
+        isUp: true
+      },
+      {
+        name: '천연가스(USD/MMBtu)',
+        value: '2.48',
+        change: '-0.05',
+        changePercent: '-1.98%',
+        isUp: false
+      }
+    ];
+  }
+};
+
+// 컴포넌트 마운트 시 실시간 데이터 가져오기 및 자동 갱신 설정
+onMounted(async () => {
+  // 초기 데이터 로드
+  await fetchExchangeRates();
+  await fetchCommoditiesData();
+  
+  // 30초마다 데이터 업데이트
+  setInterval(async () => {
+    await fetchExchangeRates();
+    await fetchCommoditiesData();
+  }, 30000);
+});
 
 // 페이지 이동 함수
 const navigateTo = (path) => {

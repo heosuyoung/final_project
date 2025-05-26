@@ -1,0 +1,9 @@
+@echo off
+echo 🖥️ 프론트엔드 개발 서버 실행 중...
+cd /d "c:\Users\HighTech\Desktop\final_project\front_end"
+echo 📍 현재 위치: %CD%
+echo 📦 npm 의존성 설치...
+npm install
+echo 🔧 Vite 개발 서버 시작...
+npm run dev
+pause

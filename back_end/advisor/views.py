@@ -10,6 +10,7 @@ import os
 import openai
 
 # OpenAI API 키 불러오기
+
 from django.conf import settings
 
 @api_view(['POST'])
