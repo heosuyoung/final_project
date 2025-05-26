@@ -11,6 +11,10 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 
 FSS_API_KEY = env("FSS_API_KEY")
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+
+# OpenAI API 키를 환경 변수에 설정
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
 
 ALLOWED_HOSTS = []
@@ -201,4 +205,5 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    # AI 어드바이저와 같은 일부 API는 별도의 권한 설정을 통해 인증 없이 접근 가능
 }
