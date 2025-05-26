@@ -110,6 +110,58 @@
                   <div v-if="favoriteStocks.length > 0" class="stock-selection-buttons">
                     <button @click="selectAllStocks" class="selection-btn">전체 선택</button>
                     <button @click="clearStockSelection" class="selection-btn">선택 취소</button>
+                    <button @click="equalizeWeights" class="selection-btn" :disabled="selectedStocks.length === 0">
+                      비중 균등 분배
+                    </button>
+                  </div>
+                  
+                  <!-- 선택된 종목 비중 설정 -->
+                  <div v-if="selectedStocks.length > 0" class="weight-configuration">
+                    <h4>투자 비중 설정</h4>
+                    <p class="weight-desc">각 종목별 투자 비중을 설정해주세요. (총합 100%)</p>
+                    
+                    <div class="weight-list">
+                      <div v-for="code in selectedStocks" :key="code" class="weight-item">
+                        <div class="weight-stock">
+                          <div class="weight-stock-name">
+                            {{ favoriteStocks.find(s => s.code === code)?.name }}
+                          </div>
+                          <div class="weight-stock-code">{{ code }}</div>
+                        </div>
+                        <div class="weight-control">
+                          <button 
+                            class="weight-btn" 
+                            @click="adjustWeight(code, -5)" 
+                            :disabled="getStockWeight(code) <= 5"
+                          >-</button>
+                          <div class="weight-display">
+                            <input 
+                              type="number" 
+                              v-model="stockWeights[code]" 
+                              @change="validateWeight(code)"
+                              min="5" 
+                              max="100"
+                              step="5"
+                            />
+                            <span class="weight-percent">%</span>
+                          </div>
+                          <button 
+                            class="weight-btn" 
+                            @click="adjustWeight(code, 5)"
+                            :disabled="getStockWeight(code) >= 100 || getTotalWeight() >= 100"
+                          >+</button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="weight-summary">
+                      <div class="weight-total">
+                        총 비중: <span :class="{ 'weight-warning': getTotalWeight() !== 100 }">{{ getTotalWeight() }}%</span>
+                      </div>
+                      <div v-if="getTotalWeight() !== 100" class="weight-error">
+                        * 총 비중이 100%가 되도록 설정해주세요
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
@@ -150,8 +202,44 @@
                       선택된 <span class="highlight-text">{{ selectedStocks.length }}개 종목</span>에 
                       <span class="highlight-text">{{ purchaseIntervalLabel }}</span> 
                       <span class="highlight-text">{{ formatCurrency(purchaseAmount) }}원</span>씩
-                      {{ selectedStocks.length > 0 ? '분산 투자됩니다.' : '투자할 예정입니다.' }}
+                      {{ selectedStocks.length > 0 ? '설정된 비중에 따라 투자됩니다.' : '투자할 예정입니다.' }}
                     </p>
+                    
+                    <div v-if="selectedStocks.length > 0" class="weight-distribution">
+                      <div class="distribution-title">종목별 투자 비중:</div>
+                      <div class="distribution-bars">
+                        <div 
+                          v-for="code in selectedStocks" 
+                          :key="code" 
+                          class="distribution-bar" 
+                          :style="{
+                            width: `${stockWeights[code] || 0}%`, 
+                            backgroundColor: getDistributionColor(selectedStocks.indexOf(code))
+                          }"
+                          :title="`${favoriteStocks.find(s => s.code === code)?.name}: ${stockWeights[code] || 0}%`"
+                        >
+                          <span v-if="(stockWeights[code] || 0) >= 10">
+                            {{ stockWeights[code] || 0 }}%
+                          </span>
+                        </div>
+                      </div>
+                      <div class="distribution-labels">
+                        <div 
+                          v-for="code in selectedStocks" 
+                          :key="`label-${code}`" 
+                          class="distribution-label"
+                        >
+                          <div 
+                            class="label-color" 
+                            :style="{ backgroundColor: getDistributionColor(selectedStocks.indexOf(code)) }"
+                          ></div>
+                          <div class="label-stock-name">
+                            {{ favoriteStocks.find(s => s.code === code)?.name }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
                     <p>
                       <b>연간 총 투자금액</b>: {{ formatCurrency(calculateAnnualInvestment()) }}
                     </p>
@@ -235,13 +323,12 @@
                           <div class="label-value">{{ segment.percent }}%</div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div class="portfolio-list">
+                    </div>                      <div class="portfolio-list">
                       <div v-for="stock in portfolioStocks" :key="stock.code" class="portfolio-item">
                         <div class="portfolio-stock-info">
                           <div class="stock-name">{{ stock.name }}</div>
                           <div class="stock-code">{{ stock.code }}</div>
+                          <div class="stock-weight">투자 비중: <span class="highlight-weight">{{ stock.weight || 0 }}%</span></div>
                         </div>
                         <div class="portfolio-details">
                           <div class="purchase-info">
@@ -350,6 +437,7 @@ const monthlyPayment = ref(500000); // 월 평균 결제금액
 // 관심종목 관련 상태
 const favoriteStocks = ref([]);
 const selectedStocks = ref([]);
+const stockWeights = ref({}); // 각 종목별 투자 비중 (%)
 const purchaseInterval = ref('monthly');
 const purchaseAmount = ref(50000);
 const purchaseStartDate = ref(new Date().toISOString().split('T')[0]); // 오늘 날짜를 기본값으로 설정
@@ -412,9 +500,69 @@ const toggleStockSelection = (code) => {
   const index = selectedStocks.value.indexOf(code);
   if (index === -1) {
     selectedStocks.value.push(code);
+    // 기본 비중 설정
+    stockWeights.value[code] = calculateDefaultWeight();
   } else {
     selectedStocks.value.splice(index, 1);
+    // 비중 제거 및 재분배
+    delete stockWeights.value[code];
+    if (selectedStocks.value.length > 0) {
+      equalizeWeights();
+    }
   }
+};
+
+// 기본 비중 계산 (균등 분배)
+const calculateDefaultWeight = () => {
+  const count = selectedStocks.value.length;
+  if (count === 0) return 0;
+  return Math.floor(100 / count);
+};
+
+// 주식 비중 조회
+const getStockWeight = (code) => {
+  return stockWeights.value[code] || 0;
+};
+
+// 총 비중 계산
+const getTotalWeight = () => {
+  return Object.values(stockWeights.value).reduce((sum, weight) => sum + Number(weight), 0);
+};
+
+// 비중 조정
+const adjustWeight = (code, amount) => {
+  if (!stockWeights.value[code]) {
+    stockWeights.value[code] = 0;
+  }
+  
+  const newWeight = Number(stockWeights.value[code]) + amount;
+  if (newWeight >= 5 && newWeight <= 100) {
+    stockWeights.value[code] = newWeight;
+  }
+};
+
+// 비중 유효성 검사
+const validateWeight = (code) => {
+  let value = Number(stockWeights.value[code]);
+  if (isNaN(value) || value < 5) {
+    value = 5;
+  } else if (value > 100) {
+    value = 100;
+  }
+  stockWeights.value[code] = value;
+};
+
+// 균등 비중 설정
+const equalizeWeights = () => {
+  const count = selectedStocks.value.length;
+  if (count === 0) return;
+  
+  const equalWeight = Math.floor(100 / count);
+  const remainder = 100 - (equalWeight * count);
+  
+  selectedStocks.value.forEach((code, index) => {
+    stockWeights.value[code] = equalWeight + (index < remainder ? 1 : 0);
+  });
 };
 
 // 차트 스타일 생성
@@ -443,8 +591,10 @@ const getPieChartSegments = () => {
   // 각 종목의 비율과 각도 계산 후 결과 배열 생성
   let cumulativePercent = 0;
   const segments = stockValues.map((stock, index) => {
-    // 이 종목의 비율 (0-100%)
-    const percent = totalValue > 0 ? (stock.value / totalValue * 100) : 0;
+    // 사용자 설정 비중 또는 계산된 비율 사용
+    // 포트폴리오 화면에서는 실제 보유 종목 가치 기반, 설정 화면에서는 사용자 지정 비중 사용
+    const stockInPortfolio = portfolioStocks.value.find(s => s.code === stock.code);
+    const percent = stockInPortfolio?.weight || (totalValue > 0 ? (stock.value / totalValue * 100) : 0);
     
     // 시작 및 종료 각도 계산
     const startPercent = cumulativePercent;
@@ -486,7 +636,8 @@ const createPieChartGradient = computed(() => {
   
   portfolioStocks.value.forEach((stock, index) => {
     const value = stockValues[index];
-    const percent = totalValue > 0 ? (value / totalValue * 100) : 0;
+    // 사용자가 설정한 비중 우선 사용 (없으면 실제 가치 기반 계산)
+    const percent = stock.weight || (totalValue > 0 ? (value / totalValue * 100) : 0);
     const color = colors[index % colors.length];
     
     // 시작 위치
@@ -504,7 +655,14 @@ const createPieChartGradient = computed(() => {
   return gradientString;
 });
 
-// These functions are no longer needed as we're using getPieChartSegments and createPieChartGradient
+// 투자 분포 색상 얻기
+const getDistributionColor = (index) => {
+  const colors = [
+    '#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0', '#FF5722', 
+    '#009688', '#3F51B5', '#CDDC39', '#795548', '#607D8B', '#00BCD4'
+  ];
+  return colors[index % colors.length];
+};
 
 // 포트폴리오 업데이트
 const updatePortfolio = () => {
@@ -519,17 +677,32 @@ const updatePortfolio = () => {
     selectedStocks.value.includes(stock.code)
   );
   
+  // 비중이 설정되지 않은 종목이 있으면 균등 분배
+  if (selectedStocks.value.some(code => !stockWeights.value[code])) {
+    equalizeWeights();
+  }
+  
   // 새로운 포트폴리오 데이터 생성
   portfolioStocks.value = selectedFavorites.map(stock => {
     // 기존 데이터가 있으면 유지, 없으면 새로 생성
     const existingStock = portfolioStocks.value.find(s => s.code === stock.code);
+    const weight = stockWeights.value[stock.code] || calculateDefaultWeight();
     
     if (existingStock) {
-      return existingStock;
+      // 기존 데이터를 유지하지만 비중 업데이트
+      return {
+        ...existingStock,
+        weight: weight
+      };
     } else {
       // 새 종목 추가 시 랜덤 데이터 생성 (실제로는 API나 DB에서)
-      const quantity = Math.floor(Math.random() * 10) + 1;
-      const avgPrice = parseInt(stock.price.replace(/,/g, ''));
+      const price = parseInt(stock.price.replace(/,/g, ''));
+      // 투자 비중에 따른 매수 금액 계산
+      const investmentAmount = purchaseAmount.value * (weight / 100);
+      // 매수 가능한 주식 수량 계산
+      const quantity = Math.floor(investmentAmount / price);
+      
+      const avgPrice = price;
       const currentPrice = avgPrice * (1 + (Math.random() * 0.2 - 0.1));
       const profitRate = parseFloat(((currentPrice / avgPrice - 1) * 100).toFixed(2));
       
@@ -539,7 +712,8 @@ const updatePortfolio = () => {
         quantity: quantity,
         avgPrice: avgPrice.toLocaleString(),
         currentPrice: Math.round(currentPrice).toLocaleString(),
-        profitRate: profitRate
+        profitRate: profitRate,
+        weight: weight
       };
     }
   });
@@ -551,20 +725,30 @@ const updatePortfolio = () => {
 // 전체 관심종목 선택
 const selectAllStocks = () => {
   selectedStocks.value = favoriteStocks.value.map(stock => stock.code);
+  // 모든 종목 선택 시 비중 균등 분배
+  equalizeWeights();
 };
 
 // 선택된 관심종목 취소
 const clearStockSelection = () => {
   selectedStocks.value = [];
+  stockWeights.value = {};
 };
 
 // 자동투자 시작
 const startAutoInvestment = () => {
+  // 투자 비중 유효성 검증
+  if (selectedStocks.value.length > 0 && getTotalWeight() !== 100) {
+    alert('투자 비중의 총합이 100%가 되어야 합니다.');
+    return;
+  }
+
   // 설정 데이터 저장
   localStorage.setItem('autoInvestSettings', JSON.stringify({
     dailySavings: dailySavings.value,
     paymentRatio: paymentRatio.value,
     selectedStocks: selectedStocks.value,
+    stockWeights: stockWeights.value,
     purchaseInterval: purchaseInterval.value,
     purchaseAmount: purchaseAmount.value,
     purchaseStartDate: purchaseStartDate.value
@@ -637,6 +821,7 @@ onMounted(() => {
     dailySavings.value = savedSettings.dailySavings || 5000;
     paymentRatio.value = savedSettings.paymentRatio || 5;
     selectedStocks.value = savedSettings.selectedStocks || [];
+    stockWeights.value = savedSettings.stockWeights || {};
     purchaseInterval.value = savedSettings.purchaseInterval || 'monthly';
     purchaseAmount.value = savedSettings.purchaseAmount || 50000;
   }
@@ -712,7 +897,22 @@ watch([purchaseInterval, purchaseAmount], () => {
 
 // 선택된 종목 변경시 포트폴리오 업데이트
 watch(selectedStocks, (newVal) => {
-  if (activeTab.value === 'stocks' && newVal.length > 0) {
+  if (activeTab.value === 'stocks') {
+    if (newVal.length > 0) {
+      // 이전에 없던 새 종목이 추가된 경우 비중 균등 분배
+      const hasNewStock = newVal.some(code => !stockWeights.value[code]);
+      if (hasNewStock) {
+        equalizeWeights();
+      }
+      updatePortfolio();
+    }
+  }
+}, { deep: true });
+
+// 투자 비중 변경 시 총합 확인
+watch(stockWeights, () => {
+  // 비중 변경 시 포트폴리오 업데이트
+  if (selectedStocks.value.length > 0 && activeTab.value === 'stocks') {
     updatePortfolio();
   }
 }, { deep: true });
@@ -1010,6 +1210,194 @@ watch(selectedStocks, (newVal) => {
 .label-value {
   font-weight: 600;
   color: #28a745;
+}
+
+/* 비중 설정 관련 스타일 */
+.weight-configuration {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  border: 1px solid #eee;
+}
+
+.weight-configuration h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.weight-desc {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.weight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.weight-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.weight-stock {
+  display: flex;
+  flex-direction: column;
+}
+
+.weight-stock-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.weight-stock-code {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.weight-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.weight-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background-color: #f0f0f0;
+  color: #555;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.weight-btn:hover:not(:disabled) {
+  background-color: #28a745;
+  color: white;
+}
+
+.weight-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.weight-display {
+  display: flex;
+  align-items: center;
+  min-width: 80px;
+}
+
+.weight-display input {
+  width: 50px;
+  padding: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: right;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.weight-percent {
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.weight-summary {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.weight-total {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.weight-warning {
+  color: #ff5722;
+  font-weight: bold;
+}
+
+.weight-error {
+  font-size: 0.85rem;
+  color: #ff5722;
+  margin-top: 0.3rem;
+}
+
+/* 투자 분포 관련 스타일 */
+.weight-distribution {
+  margin: 1rem 0;
+}
+
+.distribution-title {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #444;
+}
+
+.distribution-bars {
+  height: 30px;
+  width: 100%;
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.distribution-bar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.distribution-bar:hover {
+  filter: brightness(1.1);
+}
+
+.distribution-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.distribution-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.label-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.highlight-weight {
+  color: #28a745;
+  font-weight: 500;
 }
 
 .result-item.highlight {
