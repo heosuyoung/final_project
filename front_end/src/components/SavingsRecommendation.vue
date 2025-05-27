@@ -360,6 +360,10 @@ export default {
         { code: 'jbbank', name: '전북은행', logo: '/gwangju_jeonbuk.png', type: '1금융권' },
         { code: 'kbank', name: '케이뱅크', logo: '/kbank.png', type: '1금융권' },
         { code: 'kakao', name: '카카오뱅크', logo: '/kakaobank.png', type: '1금융권' },
+        { code: 'jeju', name: '제주은행', logo: '/jeju.png', type: '1금융권' },
+        { code: 'gyeongnam', name: '경남은행', logo: '/gyeongnam.png', type: '1금융권' },
+        { code: 'toss', name: '토스뱅크', logo: '/toss.png', type: '1금융권' },
+        { code: 'im', name: 'IM(광주은행)', logo: '/im.png', type: '1금융권' },
         
         // 2금융권 (저축은행 등)
         { code: 'jt', name: 'JT친애저축은행', logo: '/jt.png', type: '2금융권' },

@@ -1,84 +1,92 @@
 # EA$E 금융 웹 애플리케이션
 
-EA$E는 편리하고 직관적인 금융 웹 애플리케이션입니다. 사용자들에게 금융 정보를 제공하고, 투자 비교 및 자동 투자 기능을 제공합니다.
+EA$E는 사용자 친화적인 금융 정보 제공, 투자 비교, 자동 투자, 커뮤니티 등 다양한 기능을 제공하는 올인원 금융 웹 서비스입니다.
 
-## 프로젝트 구조
+---
 
-이 프로젝트는 두 부분으로 나뉘어 있습니다:
+## 📁 폴더 구조
 
-- `front_end/`: Vue.js 기반의 프론트엔드 애플리케이션
-- `back_end/`: Django 기반의 백엔드 API 서버
+```
+final_project/
+│
+├─ front_end/         # Vue3 기반 프론트엔드
+│   ├─ public/        # 정적 파일(은행 로고 등)
+│   ├─ src/           # Vue 컴포넌트, 라우터, 서비스
+│   └─ ...
+│
+├─ back_end/          # Django 기반 백엔드
+│   ├─ accounts/      # 회원/인증/소셜로그인
+│   ├─ boards/        # 게시판/댓글
+│   ├─ advisor/       # AI 금융상담
+│   ├─ api_server/    # 주식/금융 데이터 API
+│   └─ ...
+│
+├─ requirements.txt   # 전체 requirements(통합/개별)
+├─ README.md
+└─ ...
+```
 
-## 시작하기
+---
 
-### 프론트엔드 설정
+## 🚀 실행 방법
 
-```bash
-# 필요한 패키지 설치
+### 1. 프론트엔드 (Vue3)
+
+```powershell
 cd front_end
 npm install
-
-# 개발 서버 실행
 npm run dev
 ```
+- 브라우저에서 http://localhost:5173 접속
 
-### 백엔드 설정
+### 2. 백엔드 (Django)
 
-```bash
-# 가상 환경 설정
-cd back_end/05_social_projcet
+```powershell
+cd back_end
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 필요한 패키지 설치
+venv\Scripts\activate
 pip install -r requirements.txt
-
-# 환경 변수 설정
-cp .env.example .env  # 그리고 .env 파일에 필요한 값을 입력하세요
-
-# 데이터베이스 마이그레이션
 python manage.py migrate
-
-# 서버 실행
 python manage.py runserver
 ```
+- API 서버: http://localhost:8000
 
-## 주요 기능
+### 3. (선택) 주식 데이터 API 서버
+```powershell
+cd back_end/api_server
+python app.py
+```
+- Flask 기반 주식 데이터 API (포트: 5000)
 
-- 사용자 인증 (회원가입, 로그인, 프로필 관리)
-- 게시판 기능
-- 소셜 로그인 (Google)
-- 금융 상품 추천
-- 주식 비교 정보
-- 자동 투자 기능
+---
 
-## 기술 스택
+## 🏦 주요 기능
 
-### 프론트엔드
-- Vue 3 (Composition API)
-- Vue Router
-- Vite
-- Axios
+- **회원가입/로그인/프로필/팔로우**
+- **소셜 로그인(Google)**
+- **금융상품(예적금) 추천**: 은행별 금리 비교, 조건별 필터, 로고 표시
+- **주식 비교/검색/관심종목**
+- **자동 투자 시뮬레이션**: 관심종목, 투자 비중, 현황 차트
+- **AI 금융상담**: 챗봇 기반 금융 Q&A
+- **주식 커뮤니티(게시판)**: 종목별 토론, 글쓰기, 댓글, 인기순/최신순 정렬
 
-### 백엔드
-- Django 4.2
-- Django REST Framework
-- SQLite
-- Django Social Auth
+---
 
-## 공동 작업 가이드라인
+## ⚙️ 환경설정 및 주의사항
 
-1. 브랜치 관리
-   - `main`: 프로덕션 코드
-   - `develop`: 개발 중인 코드
-   - 기능 개발은 `feature/기능명` 브랜치에서 작업
+- 프론트엔드: Node.js 18+ 권장, npm 또는 yarn 사용
+- 백엔드: Python 3.8+, pip, Django 4.2, requirements.txt 참고
+- 은행 로고 등 이미지는 `front_end/public/` 폴더에 png 등으로 직접 추가
+- .env 파일(백엔드) 필요시 예시 파일 참고
 
-2. 코딩 컨벤션
-   - JavaScript/Vue: ESLint 규칙 준수
-   - Python/Django: PEP 8 규칙 준수
+---
 
-3. 커밋 메시지
-   - 기능 추가: `feat: 기능 설명`
-   - 버그 수정: `fix: 버그 설명`
-   - 문서 수정: `docs: 설명`
-   - 리팩토링: `refactor: 설명`
+## 💡 기타
+
+- 개발/운영 브랜치 분리 권장 (`main`, `develop`, `feature/`)
+- 커밋 메시지: `feat:`, `fix:`, `docs:`, `refactor:` 등 prefix 사용
+- 코드 컨벤션: Vue(ESLint), Python(PEP8) 준수
+
+---
+
+**문의/기여/오류 제보는 이슈 또는 PR로 남겨주세요!**
