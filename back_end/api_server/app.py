@@ -4,9 +4,54 @@ import requests
 from flask_cors import CORS
 import yfinance as yf
 from datetime import datetime, timedelta
+import threading
+import time
+import pandas as pd
+
+# 캐시 저장소
+cache = {
+    'exchange_rates': {'data': None, 'timestamp': None},
+    'commodities': {'data': None, 'timestamp': None}
+}
+cache_lock = threading.Lock()
+CACHE_DURATION = 30  # 캐시 유효 기간을 30초로 줄임
 
 app = Flask(__name__)
 CORS(app)
+
+def format_number(value):
+    """숫자 포맷팅 함수"""
+    try:
+        if isinstance(value, (int, float)):
+            if value >= 1000000:
+                return f"{value/1000000:.2f}M"
+            elif value >= 1000:
+                return f"{value/1000:.2f}K"
+            else:
+                return f"{value:.2f}"
+        return str(value)
+    except:
+        return str(value)
+
+def get_historical_data(symbol, period='1mo', interval='1d'):
+    """야후 파이낸스에서 히스토리컬 데이터 가져오기"""
+    try:
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period=period, interval=interval)
+        if not hist.empty:
+            return hist
+    except Exception as e:
+        print(f"Error fetching historical data for {symbol}: {str(e)}")
+    return pd.DataFrame()
+
+def initialize_cache():
+    """서버 시작 시 캐시 초기화"""
+    print("Initializing cache...")
+    # 환율 데이터 초기화
+    get_exchange_rates()
+    # 상품 데이터 초기화
+    get_commodities()
+    print("Cache initialization completed")
 
 @app.route('/stocks')
 def get_stocks():
@@ -64,87 +109,108 @@ def get_stocks():
 
     return jsonify(stocks[:30])
 
+# 캐시 관련 함수
+def get_cached_data(cache_key, fetch_func):
+    """캐시된 데이터를 가져오거나 새로운 데이터를 가져와서 캐시에 저장"""
+    with cache_lock:
+        cache_data = cache.get(cache_key)
+        current_time = time.time()
+        
+        # 캐시가 유효한 경우
+        if (cache_data and cache_data['data'] and cache_data['timestamp'] 
+            and current_time - cache_data['timestamp'] < CACHE_DURATION):
+            return cache_data['data']
+        
+        # 새로운 데이터 가져오기
+        try:
+            new_data = fetch_func()
+            if new_data:
+                cache[cache_key] = {
+                    'data': new_data,
+                    'timestamp': current_time
+                }
+                return new_data
+            elif cache_data and cache_data['data']:
+                return cache_data['data']
+        except Exception as e:
+            print(f"Error fetching data for {cache_key}: {str(e)}")
+            if cache_data and cache_data['data']:
+                return cache_data['data']
+            raise
+
 @app.route('/exchange-rates')
 def get_exchange_rates():
-    """
-    yfinance를 사용하여 실시간 환율 데이터를 가져오는 엔드포인트
-    """
+    """환율 데이터를 가져오는 엔드포인트"""
+    def fetch_latest_rates():
+        try:
+            exchange_rates = {}
+            currency_symbols = {
+                'USD': 'USDKRW=X',
+                'EUR': 'EURKRW=X',
+                'JPY': 'JPYKRW=X',
+                'CNY': 'CNYKRW=X',
+                'GBP': 'GBPKRW=X',
+                'AUD': 'AUDKRW=X',
+                'CAD': 'CADKRW=X',
+                'HKD': 'HKDKRW=X',
+                'SGD': 'SGDKRW=X'
+            }
+            
+            for currency, symbol in currency_symbols.items():
+                try:
+                    ticker = yf.Ticker(symbol)
+                    hist = ticker.history(period='5d')  # 5일치 데이터 가져오기
+                    hist = hist.dropna()  # 결측치 제거
+                    
+                    if not hist.empty:
+                        current_rate = float(hist['Close'].iloc[-1])
+                        
+                        # 변동률 계산
+                        if len(hist) >= 2:
+                            prev_rate = float(hist['Close'].iloc[-2])
+                            change = ((current_rate - prev_rate) / prev_rate) * 100
+                            change_amount = current_rate - prev_rate
+                        else:
+                            change = 0.0
+                            change_amount = 0.0
+                        
+                        if currency == 'JPY':
+                            current_rate = current_rate / 100  # Convert to per-yen rate
+                            change_amount = change_amount / 100
+                        
+                        exchange_rates[currency] = {
+                            'rate': round(current_rate, 2),
+                            'change': round(change, 2),
+                            'change_amount': round(change_amount, 2),
+                            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        }
+                except Exception as e:
+                    print(f"Failed to fetch {currency}: {str(e)}")
+            
+            if not exchange_rates:
+                raise Exception("No exchange rate data available")
+                
+            return exchange_rates
+            
+        except Exception as e:
+            print(f"Error fetching exchange rates: {str(e)}")
+            return None
+    
     try:
-        # 주요 환율 심볼 정의 (Yahoo Finance 형식)
-        currency_symbols = {
-            'USD': 'KRW=X',  # USD/KRW
-            'EUR': 'EURKRW=X',  # EUR/KRW
-            'JPY': 'JPYKRW=X',  # JPY/KRW (100엔 기준)
-            'CNY': 'CNYKRW=X',  # CNY/KRW
-            'GBP': 'GBPKRW=X',  # GBP/KRW
-            'AUD': 'AUDKRW=X',  # AUD/KRW
-            'CAD': 'CADKRW=X',  # CAD/KRW
-            'HKD': 'HKDKRW=X',  # HKD/KRW
-            'SGD': 'SGDKRW=X'   # SGD/KRW
-        }
-        
-        exchange_rates = {}
-        
-        for currency, symbol in currency_symbols.items():
-            try:
-                # yfinance를 사용하여 데이터 가져오기
-                ticker = yf.Ticker(symbol)
-                
-                # 최근 2일간 데이터 가져오기 (현재가와 전일 대비 변동 계산용)
-                hist = ticker.history(period="2d", interval="1d")
-                
-                if not hist.empty:
-                    current_price = hist['Close'].iloc[-1]
-                    
-                    # 전일 대비 변동 계산
-                    if len(hist) >= 2:
-                        prev_price = hist['Close'].iloc[-2]
-                        change = current_price - prev_price
-                        change_percent = (change / prev_price) * 100
-                    else:
-                        change = 0
-                        change_percent = 0
-                    
-                    # 특별 처리: JPY는 100엔 기준으로 표시
-                    if currency == 'JPY':
-                        current_price = current_price * 100
-                        change = change * 100
-                    
-                    exchange_rates[currency] = {
-                        'rate': f"{current_price:.2f}",
-                        'change': round(change_percent, 2),
-                        'change_amount': f"{change:.2f}",
-                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    }
-                else:
-                    # 데이터를 가져올 수 없는 경우 기본값 설정
-                    exchange_rates[currency] = {
-                        'rate': '0.00',
-                        'change': 0.00,
-                        'change_amount': '0.00',
-                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                        'error': 'Data not available'
-                    }
-                    
-            except Exception as e:
-                print(f"환율 데이터 가져오기 실패 ({currency}): {str(e)}")
-                # 오류 발생 시 기본값 설정
-                exchange_rates[currency] = {
-                    'rate': '0.00',
-                    'change': 0.00,
-                    'change_amount': '0.00',
-                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'error': str(e)
-                }
-        
-        return jsonify({
-            'success': True,
-            'data': exchange_rates,
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        })
-        
+        rates = get_cached_data('exchange_rates', fetch_latest_rates)
+        if rates:
+            return jsonify({
+                'success': True,
+                'data': rates,
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to fetch exchange rates',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }), 500
     except Exception as e:
-        print(f"전체 환율 데이터 가져오기 실패: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e),
@@ -153,74 +219,128 @@ def get_exchange_rates():
 
 @app.route('/commodities')
 def get_commodities():
-    """
-    yfinance를 사용하여 실시간 상품(원자재) 가격 데이터를 가져오는 엔드포인트
-    """
-    try:
-        # 주요 상품 심볼 정의
-        commodity_symbols = {
-            'gold': 'GC=F',      # 금 선물
-            'silver': 'SI=F',    # 은 선물
-            'copper': 'HG=F',    # 구리 선물
-            'crude_oil': 'CL=F', # 원유 선물
-            'natural_gas': 'NG=F' # 천연가스 선물
-        }
-        
-        commodities = {}
-        
-        for commodity, symbol in commodity_symbols.items():
-            try:
-                ticker = yf.Ticker(symbol)
-                hist = ticker.history(period="2d", interval="1d")
-                
-                if not hist.empty:
-                    current_price = hist['Close'].iloc[-1]
+    """상품 시세 데이터를 가져오는 엔드포인트"""
+    def get_clean_data(hist):
+        """데이터 정제 및 변동률 계산"""
+        if hist.empty or len(hist) == 0:
+            return None
+            
+        try:
+            current_price = float(hist['Close'].iloc[-1])
+            prev_price = float(hist['Close'].iloc[-2]) if len(hist) >= 2 else current_price
+            change = ((current_price - prev_price) / prev_price) * 100
+            change_amount = current_price - prev_price
+            
+            return {
+                'price': round(current_price, 2),
+                'change': round(change, 2),
+                'change_amount': round(change_amount, 2)
+            }
+        except Exception as e:
+            print(f"Error processing data: {str(e)}")
+            return None
+    def fetch_latest_commodities():
+        try:
+            commodities = {}
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            # 주요 상품(원자재/귀금속) 심볼
+            commodity_symbols = {
+                'Gold': 'GC=F',
+                'Silver': 'SI=F',
+                'Copper': 'HG=F',
+                'Crude Oil': 'CL=F',
+                'Natural Gas': 'NG=F'
+            }
+            
+            # 지수 심볼 (한국 시장)
+            index_symbols = {
+                'KOSPI': '^KS11',
+                'KOSDAQ': '^KQ11'
+            }
+            
+            # 각 심볼별로 데이터 가져오기
+            for name, symbol in {**commodity_symbols, **index_symbols}.items():
+                try:
+                    ticker = yf.Ticker(symbol)
+                    # 더 긴 기간의 데이터를 가져와서 최근 데이터 확인
+                    hist = ticker.history(period='1mo', interval='1d')
+                    hist = hist.dropna()
                     
-                    if len(hist) >= 2:
-                        prev_price = hist['Close'].iloc[-2]
-                        change = current_price - prev_price
-                        change_percent = (change / prev_price) * 100
+                    if not hist.empty:
+                        data = get_clean_data(hist)
+                        if data:
+                            data['timestamp'] = timestamp
+                            commodities[name] = data
+                            print(f"Successfully fetched {name}: {data}")
                     else:
-                        change = 0
-                        change_percent = 0
-                    
-                    commodities[commodity] = {
-                        'price': f"{current_price:.2f}",
-                        'change': round(change_percent, 2),
-                        'change_amount': f"{change:.2f}",
-                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    }
-                else:
-                    commodities[commodity] = {
-                        'price': '0.00',
-                        'change': 0.00,
-                        'change_amount': '0.00',
-                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                        'error': 'Data not available'
-                    }
-                    
-            except Exception as e:
-                print(f"상품 데이터 가져오기 실패 ({commodity}): {str(e)}")
-                commodities[commodity] = {
-                    'price': '0.00',
-                    'change': 0.00,
-                    'change_amount': '0.00',
-                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'error': str(e)
+                        print(f"No data available for {name}")
+                        
+                except Exception as e:
+                    print(f"Error fetching {name}: {str(e)}")
+                    continue
+            
+            if not commodities:
+                raise Exception("Failed to fetch any market data")
+            
+            return commodities
+            
+        except Exception as e:
+            print(f"Error in fetch_latest_commodities: {str(e)}")
+            return None
+            
+    try:
+        # 캐시된 데이터 확인
+        with cache_lock:
+            current_time = time.time()
+            if (cache['commodities']['data'] is not None and 
+                cache['commodities']['timestamp'] is not None and 
+                current_time - cache['commodities']['timestamp'] < CACHE_DURATION):
+                return jsonify({
+                    'success': True,
+                    'data': cache['commodities']['data'],
+                    'cached': True,
+                    'timestamp': datetime.fromtimestamp(cache['commodities']['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                })
+        
+        # 새로운 데이터 가져오기
+        new_data = fetch_latest_commodities()
+        if new_data:
+            with cache_lock:
+                cache['commodities'] = {
+                    'data': new_data,
+                    'timestamp': current_time
                 }
-        
-        return jsonify({
-            'success': True,
-            'data': commodities,
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        })
-        
+            return jsonify({
+                'success': True,
+                'data': new_data,
+                'cached': False,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        else:
+            # 캐시된 데이터로 폴백
+            with cache_lock:
+                if cache['commodities']['data'] is not None:
+                    return jsonify({
+                        'success': True,
+                        'data': cache['commodities']['data'],
+                        'cached': True,
+                        'timestamp': datetime.fromtimestamp(cache['commodities']['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                    })
+            
+            return jsonify({
+                'success': False,
+                'error': 'Failed to fetch market data',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }), 500
+            
     except Exception as e:
-        print(f"전체 상품 데이터 가져오기 실패: {str(e)}")
+        print(f"Error in get_commodities: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e),
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')        }), 500
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 500
 
 @app.route('/stock-analysis/<stock_code>')
 def get_stock_analysis(stock_code):
