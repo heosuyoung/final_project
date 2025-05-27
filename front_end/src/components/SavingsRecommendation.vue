@@ -344,28 +344,28 @@ export default {
       // 은행 목록 데이터
       banks: [
         // 1금융권 은행들
-        { code: 'kb', name: 'KB국민은행', logo: 'https://cdn.banksalad.com/icons/widgets/kbbank.png', type: '1금융권' },
-        { code: 'shinhan', name: '신한은행', logo: 'https://cdn.banksalad.com/icons/widgets/shinhan.png', type: '1금융권' },
-        { code: 'woori', name: '우리은행', logo: 'https://cdn.banksalad.com/icons/widgets/woori.png', type: '1금융권' },
-        { code: 'hana', name: '하나은행', logo: 'https://cdn.banksalad.com/icons/widgets/hana.png', type: '1금융권' },
-        { code: 'ibk', name: 'IBK기업은행', logo: 'https://cdn.banksalad.com/icons/widgets/ibkbank.png', type: '1금융권' },
-        { code: 'nh', name: 'NH농협은행', logo: 'https://cdn.banksalad.com/icons/widgets/nhbank.png', type: '1금융권' },
-        { code: 'sc', name: 'SC제일은행', logo: 'https://cdn.banksalad.com/icons/widgets/standardchartered.png', type: '1금융권' },
-        { code: 'kdb', name: 'KDB산업은행', logo: 'https://cdn.banksalad.com/icons/widgets/kdb.png', type: '1금융권' },
-        { code: 'suhyup', name: '수협은행', logo: 'https://cdn.banksalad.com/icons/widgets/suhyup.png', type: '1금융권' },
-        { code: 'citi', name: '시티은행', logo: 'https://cdn.banksalad.com/icons/widgets/citi.png', type: '1금융권' },
-        { code: 'dgb', name: 'DGB대구은행', logo: 'https://cdn.banksalad.com/icons/widgets/dgb.png', type: '1금융권' },
-        { code: 'bnk', name: 'BNK부산은행', logo: 'https://cdn.banksalad.com/icons/widgets/bnk.png', type: '1금융권' },
-        { code: 'kjb', name: '광주은행', logo: 'https://cdn.banksalad.com/icons/widgets/kjb.png', type: '1금융권' },
-        { code: 'jbbank', name: '전북은행', logo: 'https://cdn.banksalad.com/icons/widgets/jbbank.png', type: '1금융권' },
-        { code: 'kbank', name: '케이뱅크', logo: 'https://cdn.banksalad.com/icons/widgets/kbank.png', type: '1금융권' },
-        { code: 'kakao', name: '카카오뱅크', logo: 'https://cdn.banksalad.com/icons/widgets/kakaobank.png', type: '1금융권' },
+        { code: 'kb', name: 'KB국민은행', logo: '/kookmin.png', type: '1금융권' },
+        { code: 'shinhan', name: '신한은행', logo: '/shinhan.png', type: '1금융권' },
+        { code: 'woori', name: '우리은행', logo: '/woori.png', type: '1금융권' },
+        { code: 'hana', name: '하나은행', logo: '/hana.png', type: '1금융권' },
+        { code: 'ibk', name: 'IBK기업은행', logo: '/ibk.png', type: '1금융권' },
+        { code: 'nh', name: 'NH농협은행', logo: '/nonghyup.png', type: '1금융권' },
+        { code: 'sc', name: 'SC제일은행', logo: '/scjeil.png', type: '1금융권' },
+        { code: 'kdb', name: 'KDB산업은행', logo: '/kdb.png', type: '1금융권' },
+        { code: 'suhyup', name: '수협은행', logo: '/suhyup.png', type: '1금융권' },
+        { code: 'citi', name: '시티은행', logo: '/citi.png', type: '1금융권' },
+        { code: 'dgb', name: 'DGB대구은행', logo: '/daegu.png', type: '1금융권' },
+        { code: 'bnk', name: 'BNK부산은행', logo: '/busan.png', type: '1금융권' },
+        { code: 'kjb', name: '광주은행', logo: '/gwangju_jeonbuk.png', type: '1금융권' },
+        { code: 'jbbank', name: '전북은행', logo: '/gwangju_jeonbuk.png', type: '1금융권' },
+        { code: 'kbank', name: '케이뱅크', logo: '/kbank.png', type: '1금융권' },
+        { code: 'kakao', name: '카카오뱅크', logo: '/kakaobank.png', type: '1금융권' },
         
         // 2금융권 (저축은행 등)
-        { code: 'jt', name: 'JT친애저축은행', logo: 'https://cdn.banksalad.com/icons/widgets/jtchinae.png', type: '2금융권' },
-        { code: 'sbi', name: 'SBI저축은행', logo: 'https://cdn.banksalad.com/icons/widgets/sbi.png', type: '2금융권' },
-        { code: 'welcomeb', name: '웰컴저축은행', logo: 'https://cdn.banksalad.com/icons/widgets/welcome.png', type: '2금융권' },
-        { code: 'oksb', name: 'OK저축은행', logo: 'https://cdn.banksalad.com/icons/widgets/oksavings.png', type: '2금융권' }
+        { code: 'jt', name: 'JT친애저축은행', logo: '/jt.png', type: '2금융권' },
+        { code: 'sbi', name: 'SBI저축은행', logo: '/savings.png', type: '2금융권' },
+        { code: 'welcomeb', name: '웰컴저축은행', logo: '/welcome.png', type: '2금융권' },
+        { code: 'oksb', name: 'OK저축은행', logo: '/ok.png', type: '2금융권' }
       ]
     };
   },
