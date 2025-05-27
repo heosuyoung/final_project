@@ -22,21 +22,13 @@
           <span>글쓰기</span>
         </button>
       </div>
-    </div>
-
-    <!-- 탭 네비게이션 -->
+    </div>    <!-- 탭 네비게이션 -->
     <div class="tab-navigation">
       <button 
         class="tab-btn" 
         :class="{ 'active': activeTab === 'discussion' }"
         @click="activeTab = 'discussion'">
         💬 토론
-      </button>
-      <button 
-        class="tab-btn" 
-        :class="{ 'active': activeTab === 'news' }"
-        @click="activeTab = 'news'">
-        📰 뉴스
       </button>
       <button 
         class="tab-btn" 
@@ -88,14 +80,7 @@
             </div>
           </li>
         </ul>
-      </div>
-
-      <!-- 뉴스 탭 -->
-      <div v-if="activeTab === 'news'" class="tab-content news-tab">
-        <div class="coming-soon">뉴스 기능은 준비 중입니다.</div>
-      </div>
-
-      <!-- 영상 탭 -->
+      </div>      <!-- 영상 탭 -->
       <div v-if="activeTab === 'videos'" class="tab-content videos-tab">
         <YouTubeSection :stock-name="stockName" />
       </div>      <!-- 분석 탭 -->
@@ -159,26 +144,11 @@
                 <div class="financial-value">{{ financialData.debtRatio }}%</div>
                 <div class="financial-desc">총부채/총자본</div>
               </div>
-              
-              <!-- 영업이익률 카드 (데이터가 있을 때만 표시) -->
+                <!-- 영업이익률 카드 (데이터가 있을 때만 표시) -->
               <div class="financial-card" v-if="financialData.operatingMargin !== undefined">
                 <div class="financial-label">영업이익률</div>
                 <div class="financial-value">{{ financialData.operatingMargin }}%</div>
                 <div class="financial-desc">영업이익/매출액</div>
-              </div>
-              
-              <!-- 배당수익률 카드 (데이터가 있을 때만 표시) -->
-              <div class="financial-card" v-if="financialData.dividendYield !== undefined">
-                <div class="financial-label">배당수익률</div>
-                <div class="financial-value">{{ financialData.dividendYield }}%</div>
-                <div class="financial-desc">연간배당금/주가</div>
-              </div>
-              
-              <!-- 시가총액 카드 (항상 표시) -->
-              <div class="financial-card" v-if="financialData.marketCap !== 'N/A'">
-                <div class="financial-label">시가총액</div>
-                <div class="financial-value">{{ formatMarketCap(financialData.marketCap) }}</div>
-                <div class="financial-desc">발행주식수 × 주가</div>
               </div>
             </div>
           </div>
@@ -237,7 +207,7 @@ const route = useRoute()
 const router = useRouter()
 const stockCode = route.params.code
 const stockName = ref('')
-const activeTab = ref('discussion')
+const activeTab = ref('discussion') // 뉴스 탭 제거로 항상 기본값은 토론 탭으로 설정
 const sortOption = ref('latest')
 const isFavorite = ref(false)
 const stockPrice = ref(null)
@@ -401,96 +371,38 @@ const loadStockInfo = async () => {
     }
       // 주식 데이터에서 현재 종목 찾기
     const match = stocksData.find(item => item.code === stockCode);
-    stockName.value = match?.name || stockCode;
-      // 실시간 주식 데이터가 있는 페이지에서 데이터를 불러옴
+    stockName.value = match?.name || stockCode;    // 실시간 주식 데이터가 있는 페이지에서 데이터를 불러옴
     // http://localhost:5173/stocks에서 보이는 실제 시세 데이터 사용
-    // 이 변수에 실제 최신 주가 데이터를 담음
-    const realTimeStockData = {
-      '005930': { // 삼성전자
-        price: '54,200', 
-        change: '-500',
-        changePercent: '-0.91%',
-        isUp: false
-      },
-      '000660': { // SK하이닉스
-        price: '200,000',
-        change: '+3,100',
-        changePercent: '+1.57%',
-        isUp: true
-      },
-      '207940': { // 삼성바이오로직스
-        price: '1,016,000',
-        change: '-64,000',
-        changePercent: '-5.93%',
-        isUp: false
-      },
-      '035420': { // NAVER
-        price: '183,100',
-        change: '-100',
-        changePercent: '-0.05%',
-        isUp: false
-      },
-      '005380': { // 현대자동차
-        price: '179,900',
-        change: '-2,500',
-        changePercent: '-1.37%',
-        isUp: false
-      },
-      '005935': { // 삼성전자우
-        price: '44,900',
-        change: '+700',
-        changePercent: '+1.58%',
-        isUp: true
-      },
-      '051910': { // LG화학
-        price: '426,000',
-        change: '+3,200',
-        changePercent: '+0.75%',
-        isUp: true
-      },
-      '006400': { // 삼성SDI
-        price: '613,000',
-        change: '-9,000',
-        changePercent: '-1.45%',
-        isUp: false
-      },
-      '068270': { // 셀트리온
-        price: '152,700',
-        change: '-1,200',
-        changePercent: '-0.82%',
-        isUp: false
-      },
-      '000270': { // 기아
-        price: '87,100',
-        change: '-2,000',
-        changePercent: '-2.25%',
-        isUp: false
-      },
-      '373220': { // LG에너지솔루션
-        price: '268,000',
-        change: '-5,000',
-        changePercent: '-1.83%',
-        isUp: false
-      },
-      '012450': { // 한화에어로스페이스
-        price: '830,000',
-        change: '+12,000',
-        changePercent: '+1.47%',
-        isUp: true
-      },
-      '066570': { // LG전자
-        price: '105,300',
-        change: '+1,300',
-        changePercent: '+1.25%',
-        isUp: true
-      },
-      '034730': { // SK
-        price: '188,000',
-        change: '-1,000',
-        changePercent: '-0.53%',
-        isUp: false
+    // Flask 서버에서 실시간으로 가져온 주가 데이터를 저장하기 위한 변수
+    let realTimeStockData = {};
+      
+    try {
+      // Flask 서버에서 최신 주가 데이터 가져오기
+      const response = await axios.get('http://127.0.0.1:5000/stocks');
+      if (response.data && Array.isArray(response.data)) {
+        // 응답 데이터를 우리가 필요한 형태로 변환
+        response.data.forEach(stock => {
+          // 쉼표 있는 가격 문자열 그대로 사용
+          const price = stock.price;
+          // 변동률에서 부호 추출하여 isUp 설정
+          const isUp = !stock.changeRate.includes('-');
+          // 변동폭 계산 (가격 * 변동률/100)
+          const priceNumeric = parseFloat(price.replace(/,/g, ''));
+          const changeRateNumeric = parseFloat(stock.changeRate.replace(/[+%]/g, '').replace('-', ''));
+          const changeValue = Math.round(priceNumeric * changeRateNumeric / 100);
+          const change = isUp ? `+${changeValue.toLocaleString()}` : `-${changeValue.toLocaleString()}`;
+          
+          realTimeStockData[stock.code] = {
+            price: price,
+            change: change,
+            changePercent: stock.changeRate,
+            isUp: isUp
+          };
+        });
       }
-    };
+    } catch (error) {
+      console.error('Flask 서버에서 주가 데이터 가져오기 실패:', error);
+    }
       // 데이터 우선순위: 
     // 0. 페이지 내 hardcoded 최신 주가 데이터 (localhost:5173/stocks와 동일하게 표시)
     // 1. 캐시된 데이터 (페이지를 나갔다 들어와도 일관성 유지)
@@ -498,16 +410,18 @@ const loadStockInfo = async () => {
     // 3. 결정적 알고리즘으로 생성
 
     // 캐시된 주가 데이터를 확인 - 이미 저장된 정보가 있으면 그대로 사용
-    const cachedStockPrices = JSON.parse(localStorage.getItem('stock_prices') || '{}');
-    
-    // 먼저 하드코딩된 최신 주가 데이터 사용 (localhost:5173/stocks에서 보이는 데이터)
+    const cachedStockPrices = JSON.parse(localStorage.getItem('stock_prices') || '{}');    
+    // 먼저 Flask API에서 불러온 실시간 주가 데이터 사용 (localhost:5173/stocks에서 보이는 데이터와 동일)
     if (realTimeStockData[stockCode]) {
       stockPrice.value = realTimeStockData[stockCode];
+      // 최신 데이터를 캐시에 저장
+      cachedStockPrices[stockCode] = realTimeStockData[stockCode];
+      localStorage.setItem('stock_prices', JSON.stringify(cachedStockPrices));
     }
     // 캐시된 데이터 확인 
     else if (cachedStockPrices[stockCode]) {
       stockPrice.value = cachedStockPrices[stockCode];
-    }    // API 또는 파일에서 가져온 데이터가 있는 경우 
+    }// API 또는 파일에서 가져온 데이터가 있는 경우 
     else if (match && match.price) {
       const price = match.price.toString();
       const change = match.diff ? match.diff.toString() : '0';
@@ -624,16 +538,14 @@ const generateFinancialData = async () => {
   try {
     // 실제 API에서 재무정보 가져오기
     const response = await axios.get(`http://localhost:5000/stock-analysis/${stockCode}`);
-    
-    if (response.data.success) {
+      if (response.data.success) {
       const apiFinancialData = response.data.data.financial_data;
       financialData.value = {
         per: apiFinancialData.per,
         pbr: apiFinancialData.pbr,
         roe: apiFinancialData.roe,
         debtRatio: apiFinancialData.debtRatio,
-        operatingMargin: apiFinancialData.operatingMargin,
-        dividendYield: apiFinancialData.dividendYield
+        operatingMargin: apiFinancialData.operatingMargin
       };
     } else {
       throw new Error('API 응답 실패');
@@ -643,21 +555,18 @@ const generateFinancialData = async () => {
     
     // API 실패 시 기존 가상 데이터 사용
     const codeSum = [...stockCode].reduce((sum, char) => sum + (parseInt(char) || 0), 0);
-    
-    const per = (8 + (codeSum % 20)).toFixed(1);
+      const per = (8 + (codeSum % 20)).toFixed(1);
     const pbr = (0.5 + (codeSum % 30) / 10).toFixed(1);
     const roe = (5 + (codeSum % 25)).toFixed(1);
     const debtRatio = (20 + (codeSum % 80)).toFixed(1);
     const operatingMargin = (3 + (codeSum % 15)).toFixed(1);
-    const dividendYield = (1 + (codeSum % 5)).toFixed(1);
     
     financialData.value = {
       per,
       pbr,
       roe,
       debtRatio,
-      operatingMargin,
-      dividendYield
+      operatingMargin
     };
   }
 };
@@ -861,21 +770,7 @@ const createStockChart = async () => {
   }
 };
 
-// 시가총액 포맷 함수
-const formatMarketCap = (marketCap) => {
-  if (!marketCap || marketCap === 'N/A') return 'N/A';
-  
-  const num = typeof marketCap === 'string' ? parseFloat(marketCap) : marketCap;
-  if (isNaN(num)) return 'N/A';
-  
-  if (num >= 1000000000000) {
-    return `${(num / 1000000000000).toFixed(1)}조원`;
-  } else if (num >= 100000000) {
-    return `${(num / 100000000).toFixed(0)}억원`;
-  } else {
-    return `${num.toLocaleString()}원`;
-  }
-};
+// 시가총액 포맷 함수는 더 이상 사용하지 않으므로 제거함
 
 // 차트 기간 변경 함수
 const changeChartPeriod = async (period) => {
@@ -891,6 +786,17 @@ onMounted(() => {
   loadStockInfo()
   loadPosts()
   checkFavorite()
+  
+  // 뉴스 탭이 제거되었으므로 만약 URL이나 상태에서 news로 설정되어 있다면 토론으로 변경
+  if (activeTab.value === 'news') {
+    activeTab.value = 'discussion'
+  }
+  
+  // 30초마다 주식 가격 데이터 업데이트
+  setInterval(async () => {
+    console.log('주가 데이터 자동 업데이트 시작');
+    await loadStockInfo();
+  }, 30000);
 })
 
 // 탭 변경 감지 및 분석 탭일 때 차트 생성
