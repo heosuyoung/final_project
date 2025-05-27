@@ -514,24 +514,26 @@ const updateFavoriteStockPrice = () => {
 // 게시글 불러오기
 const loadPosts = () => {
   const allKeys = Object.keys(localStorage)
+  console.log('[StockCommunity] localStorage keys:', allKeys)
   const postKeys = allKeys.filter(k => k.startsWith(`post_${stockCode}_`))
+  console.log('[StockCommunity] post key 패턴:', `post_${stockCode}_`)
+  console.log('[StockCommunity] postKeys:', postKeys)
   const loadedPosts = postKeys.map(k => {
     const raw = localStorage.getItem(k)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (!parsed.id) {
-      const extractedId = k.split(`post_${stockCode}_`)[1]
-      if (extractedId) parsed.id = extractedId
-    }
+    // 필수값 없는 데이터는 제외
+    if (!parsed.id || !parsed.title) return null
     return parsed
-  }).filter(p => p !== null && p.id)
-  
-  // 기존 데이터와 통합
-  if (loadedPosts.length > 0) {
-    const existingIds = dummyPosts.value.map(p => p.id)
-    const newPosts = loadedPosts.filter(p => !existingIds.includes(p.id))
-    dummyPosts.value = [...newPosts, ...dummyPosts.value]  }
+  }).filter(Boolean)
+  console.log('[StockCommunity] loadedPosts:', loadedPosts)
+  dummyPosts.value = loadedPosts
 }
+
+// 라우트 변경 시 게시글 목록 새로고침
+watch(() => route.fullPath, () => {
+  loadPosts()
+})
 
 // 재무정보 생성 함수
 const generateFinancialData = async () => {

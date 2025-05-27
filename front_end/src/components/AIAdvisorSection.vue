@@ -95,13 +95,7 @@
               <span class="option-icon">📊</span>
               재무 정보 보기
             </button>
-            <button class="option-btn" @click="showMarketData = !showMarketData">
-              <span class="option-icon">📈</span>
-              시장 데이터
-            </button>
           </div>
-          
-          <MarketDataWidget v-if="showMarketData" class="market-data-section" />
           
           <div v-if="showFinancialSummary && financialData" class="financial-summary">
             <h4>재무 정보 요약</h4>
@@ -173,7 +167,6 @@ import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import axios from 'axios';
 import FinancialDataForm from './FinancialDataForm.vue';
 import FinancialCharts from './FinancialCharts.vue';
-import MarketDataWidget from './MarketDataWidget.vue';
 
 // API 기본 경로 설정
 import.meta.env.PROD ? 
@@ -190,7 +183,6 @@ const activeView = ref('info'); // 'info' 또는 'chat'
 const showFinancialForm = ref(false);
 const showFinancialSummary = ref(false);
 const showCharts = ref(false);
-const showMarketData = ref(false);
 const financialData = ref(null);
 
 // 채팅 관련 상태
@@ -1058,16 +1050,6 @@ onMounted(() => {
 
 .close-summary-btn:hover {
   color: #333;
-}
-
-.market-data-section {
-  margin-bottom: 1.5rem;
-  animation: fadeIn 0.4s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 데모 채팅 스타일 */

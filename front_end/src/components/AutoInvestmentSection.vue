@@ -575,13 +575,13 @@ const getPieChartSegments = () => {
     '#009688', '#3F51B5', '#CDDC39', '#795548', '#607D8B', '#00BCD4'
   ];
   
-  // 각 종목의 가치 계산
+  // 각 종목의 가치 계산 (currentPrice가 없으면 '0' 사용)
   const stockValues = portfolioStocks.value.map(stock => {
-    const price = parseInt(stock.currentPrice.replace(/,/g, ''));
+    const price = parseInt((stock.currentPrice || '0').toString().replace(/,/g, ''));
     return {
       code: stock.code,
       name: stock.name,
-      value: price * stock.quantity
+      value: price * (stock.quantity || 0)
     };
   });
   
@@ -621,10 +621,10 @@ const createPieChartGradient = computed(() => {
     '#009688', '#3F51B5', '#CDDC39', '#795548', '#607D8B', '#00BCD4'
   ];
   
-  // 각 종목의 가치 계산
+  // 각 종목의 가치 계산 (price가 없으면 '0' 사용)
   const stockValues = portfolioStocks.value.map(stock => {
-    const price = parseInt(stock.price.replace(/,/g, ''));
-    return price * stock.quantity;
+    const price = parseInt((stock.price || '0').toString().replace(/,/g, ''));
+    return price * (stock.quantity || 0);
   });
   
   // 총 포트폴리오 가치 계산
@@ -916,6 +916,45 @@ watch(stockWeights, () => {
     updatePortfolio();
   }
 }, { deep: true });
+
+// activeTab이 'status'로 변경될 때마다 현황 데이터 갱신
+watch(activeTab, (newTab) => {
+  if (newTab === 'status') {
+    // 자동투자 설정 불러오기
+    const savedSettings = JSON.parse(localStorage.getItem('autoInvestSettings') || 'null');
+    if (savedSettings) {
+      dailySavings.value = savedSettings.dailySavings || 5000;
+      paymentRatio.value = savedSettings.paymentRatio || 5;
+      selectedStocks.value = savedSettings.selectedStocks || [];
+      stockWeights.value = savedSettings.stockWeights || {};
+      purchaseInterval.value = savedSettings.purchaseInterval || 'monthly';
+      purchaseAmount.value = savedSettings.purchaseAmount || 50000;
+    }
+    // 포트폴리오 불러오기
+    const savedPortfolio = JSON.parse(localStorage.getItem('portfolioStocks') || 'null');
+    if (savedPortfolio) {
+      portfolioStocks.value = savedPortfolio;
+    }
+    // 투자 시작일 불러오기
+    const savedStartDate = localStorage.getItem('investmentStartDate');
+    if (savedStartDate) {
+      investmentStartDate.value = parseInt(savedStartDate);
+    }
+    // 월간 자동저축 및 주식매수 현황 재계산
+    monthlyAutoSavings.value = dailySavings.value * 30 + (monthlyPayment.value * paymentRatio.value / 100);
+    switch (purchaseInterval.value) {
+      case 'daily':
+        monthlyStockPurchase.value = purchaseAmount.value * 30;
+        break;
+      case 'weekly':
+        monthlyStockPurchase.value = purchaseAmount.value * 4;
+        break;
+      case 'monthly':
+        monthlyStockPurchase.value = purchaseAmount.value;
+        break;
+    }
+  }
+});
 </script>
 
 <style scoped>

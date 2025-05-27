@@ -50,17 +50,22 @@ const submitPost = () => {
   }
 
   const postId = Date.now().toString()
-
-  localStorage.setItem(`post_${stockCode}_${postId}`, JSON.stringify({
+  const key = `post_${stockCode}_${postId}`
+  const value = {
     id: postId,
     stockCode: stockCode,
     title: title.value,
     content: content.value,
     author: username,
     date: new Date().toISOString().split('T')[0]
-  }))
-
+  }
+  localStorage.setItem(key, JSON.stringify(value))
+  // 디버깅용 콘솔 출력
+  console.log('[WritePost] 저장 key:', key)
+  console.log('[WritePost] 저장 value:', value)
   router.push(`/community/${stockCode}/${postId}`)
+  // 강제 새로고침으로 데이터 동기화 문제 방지
+  setTimeout(() => window.location.reload(), 100)
 }
 
 const cancel = () => {

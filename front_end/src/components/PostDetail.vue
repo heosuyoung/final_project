@@ -1,5 +1,5 @@
 <template>
-  <div class="post-detail" v-if="post">
+  <div class="post-detail" v-if="post && post.title">
     <h2>{{ stockName }} - 글 상세</h2>
     <h3>{{ post.title }}</h3>
     <p><strong>작성자:</strong> {{ post.author }}</p>
@@ -42,7 +42,7 @@
   </div>
 
   <div v-else>
-    <p>글을 찾을 수 없습니다.</p>
+    <p>글을 찾을 수 없습니다. (2초 후 목록으로 이동합니다)</p>
   </div>
 </template>
 
@@ -77,7 +77,9 @@ onMounted(async () => {
   }
 
   // ✅ 게시글 데이터 로딩
-  const stored = localStorage.getItem(`post_${stockCode}_${postId.value}`)
+  const stored = localStorage.getItem(`post_${stockCode.value}_${postId.value}`)
+  console.log('[PostDetail] 상세 key:', `post_${stockCode.value}_${postId.value}`)
+  console.log('[PostDetail] 상세 데이터:', stored)
   if (stored) {
     post.value = JSON.parse(stored)
   }
@@ -175,6 +177,14 @@ const reloadPostData = async () => {
 // ✅ watch 추가 - 코드(postId)가 변경되면 reloadPostData 재호출
 watch(() => [route.params.code, route.params.postId], reloadPostData)
 
+// 게시글이 없으면 2초 후 자동으로 커뮤니티 목록으로 이동
+watch(post, (val) => {
+  if (val === null) {
+    setTimeout(() => {
+      router.push(`/community/${route.params.code}`)
+    }, 2000)
+  }
+})
 </script>
 
 
