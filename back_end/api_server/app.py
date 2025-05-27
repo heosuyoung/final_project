@@ -11,10 +11,14 @@ import pandas as pd
 # 캐시 저장소
 cache = {
     'exchange_rates': {'data': None, 'timestamp': None},
-    'commodities': {'data': None, 'timestamp': None}
+    'commodities': {'data': None, 'timestamp': None},
+    'currency_history': {'data': None, 'timestamp': None},
+    'commodity_history': {'data': None, 'timestamp': None},
+    'index_history': {'data': None, 'timestamp': None}
 }
 cache_lock = threading.Lock()
 CACHE_DURATION = 30  # 캐시 유효 기간을 30초로 줄임
+HISTORY_CACHE_DURATION = 3600  # 시계열 데이터는 1시간 캐싱
 
 app = Flask(__name__)
 CORS(app)
@@ -51,6 +55,12 @@ def initialize_cache():
     get_exchange_rates()
     # 상품 데이터 초기화
     get_commodities()
+    
+    # 히스토리 데이터 캐시 초기화 (백그라운드에서 실행)
+    threading.Thread(target=get_currency_history).start()
+    threading.Thread(target=get_commodity_history).start()
+    threading.Thread(target=get_index_history).start()
+    
     print("Cache initialization completed")
 
 @app.route('/stocks')
@@ -512,6 +522,208 @@ def get_stock_analysis(stock_code):
         return jsonify({
             'success': False,
             'error': str(e),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 500
+
+# 환율 히스토리 데이터 가져오기
+@app.route('/currency-history')
+def get_currency_history():
+    """환율의 최근 30일 히스토리 데이터를 제공하는 엔드포인트"""
+    def fetch_currency_history():
+        try:
+            currency_symbols = {
+                'USD': 'USDKRW=X', 
+                'EUR': 'EURKRW=X',
+                'JPY': 'JPYKRW=X',
+                'CNY': 'CNYKRW=X',
+                'GBP': 'GBPKRW=X',
+                'AUD': 'AUDKRW=X',
+                'CAD': 'CADKRW=X', 
+                'HKD': 'HKDKRW=X',
+                'SGD': 'SGDKRW=X'
+            }
+            
+            result = {}
+            
+            for currency, symbol in currency_symbols.items():
+                hist = get_historical_data(symbol, period='30d', interval='1d')
+                if not hist.empty:
+                    # 날짜-가격 쌍으로 변환
+                    history_data = []
+                    for index, row in hist.iterrows():
+                        date_str = index.strftime('%Y-%m-%d')
+                        close_price = round(row['Close'], 2)
+                        
+                        # JPY는 100엔당 원화로 표시되므로 100으로 나눔
+                        if currency == 'JPY':
+                            close_price = close_price / 100
+                            
+                        history_data.append({
+                            'date': date_str,
+                            'price': close_price
+                        })
+                    
+                    result[currency] = history_data
+            
+            return result
+        except Exception as e:
+            print(f"환율 히스토리 데이터 가져오기 실패: {str(e)}")
+            return None
+    
+    # 캐싱된 데이터 가져오기
+    with cache_lock:
+        cache_data = cache.get('currency_history')
+        current_time = time.time()
+        
+        if (cache_data and cache_data['data'] and cache_data['timestamp'] 
+            and current_time - cache_data['timestamp'] < HISTORY_CACHE_DURATION):
+            data = cache_data['data']
+        else:
+            data = fetch_currency_history()
+            if data:
+                cache['currency_history'] = {
+                    'data': data,
+                    'timestamp': current_time
+                }
+    
+    if data:
+        return jsonify({
+            'success': True,
+            'data': data,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': "환율 히스토리 데이터를 가져오지 못했습니다.",
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 500
+
+# 상품(금, 은, 원유 등) 히스토리 데이터 가져오기
+@app.route('/commodity-history')
+def get_commodity_history():
+    """상품의 최근 30일 히스토리 데이터를 제공하는 엔드포인트"""
+    def fetch_commodity_history():
+        try:
+            commodity_symbols = {
+                'Gold': 'GC=F',  # 금 선물
+                'Silver': 'SI=F',  # 은 선물
+                'Copper': 'HG=F',  # 구리 선물
+                'Crude Oil': 'CL=F',  # WTI 원유 선물
+                'Natural Gas': 'NG=F'  # 천연가스 선물
+            }
+            
+            result = {}
+            
+            for commodity, symbol in commodity_symbols.items():
+                hist = get_historical_data(symbol, period='30d', interval='1d')
+                if not hist.empty:
+                    # 날짜-가격 쌍으로 변환
+                    history_data = []
+                    for index, row in hist.iterrows():
+                        date_str = index.strftime('%Y-%m-%d')
+                        close_price = round(row['Close'], 2)
+                        history_data.append({
+                            'date': date_str,
+                            'price': close_price
+                        })
+                    
+                    result[commodity] = history_data
+            
+            return result
+        except Exception as e:
+            print(f"상품 히스토리 데이터 가져오기 실패: {str(e)}")
+            return None
+    
+    # 캐싱된 데이터 가져오기
+    with cache_lock:
+        cache_data = cache.get('commodity_history')
+        current_time = time.time()
+        
+        if (cache_data and cache_data['data'] and cache_data['timestamp'] 
+            and current_time - cache_data['timestamp'] < HISTORY_CACHE_DURATION):
+            data = cache_data['data']
+        else:
+            data = fetch_commodity_history()
+            if data:
+                cache['commodity_history'] = {
+                    'data': data,
+                    'timestamp': current_time
+                }
+    
+    if data:
+        return jsonify({
+            'success': True,
+            'data': data,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': "상품 히스토리 데이터를 가져오지 못했습니다.",
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 500
+
+# 지수(KOSPI, KOSDAQ) 히스토리 데이터 가져오기
+@app.route('/index-history')
+def get_index_history():
+    """지수의 최근 30일 히스토리 데이터를 제공하는 엔드포인트"""
+    def fetch_index_history():
+        try:
+            # 야후 파이낸스의 코스피, 코스닥 심볼
+            index_symbols = {
+                'KOSPI': '^KS11',
+                'KOSDAQ': '^KQ11'
+            }
+            
+            result = {}
+            
+            for index_name, symbol in index_symbols.items():
+                hist = get_historical_data(symbol, period='30d', interval='1d')
+                if not hist.empty:
+                    # 날짜-가격 쌍으로 변환
+                    history_data = []
+                    for index, row in hist.iterrows():
+                        date_str = index.strftime('%Y-%m-%d')
+                        close_price = round(row['Close'], 2)
+                        history_data.append({
+                            'date': date_str,
+                            'price': close_price
+                        })
+                    
+                    result[index_name] = history_data
+            
+            return result
+        except Exception as e:
+            print(f"지수 히스토리 데이터 가져오기 실패: {str(e)}")
+            return None
+    
+    # 캐싱된 데이터 가져오기
+    with cache_lock:
+        cache_data = cache.get('index_history')
+        current_time = time.time()
+        
+        if (cache_data and cache_data['data'] and cache_data['timestamp'] 
+            and current_time - cache_data['timestamp'] < HISTORY_CACHE_DURATION):
+            data = cache_data['data']
+        else:
+            data = fetch_index_history()
+            if data:
+                cache['index_history'] = {
+                    'data': data,
+                    'timestamp': current_time
+                }
+    
+    if data:
+        return jsonify({
+            'success': True,
+            'data': data,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': "지수 히스토리 데이터를 가져오지 못했습니다.",
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }), 500
 

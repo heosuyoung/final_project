@@ -268,38 +268,178 @@ export default {
       } catch (error) {
         console.error('데이터 가져오기 실패:', error);
       }
-    },
-
-    // 선택된 통화에 따른 차트 업데이트
-    updateCurrencyData() {
+    },    // 선택된 통화에 따른 차트 업데이트
+    async updateCurrencyData() {
       this.fetchExchangeRates();
+      await this.fetchCurrencyHistoryData();
     },
     
     // 선택된 상품에 따른 차트 업데이트
-    updateCommodityData() {
+    async updateCommodityData() {
       this.fetchCommoditiesData();
+      await this.fetchCommodityHistoryData();
     },
     
     // 선택된 지수에 따른 차트 업데이트
-    updateIndexData() {
+    async updateIndexData() {
       this.fetchCommoditiesData();
+      await this.fetchIndexHistoryData();
+    },
+    
+    // 환율 히스토리 데이터 가져오기
+    async fetchCurrencyHistoryData() {
+      try {
+        const response = await axios.get('http://127.0.0.1:5000/currency-history');
+        if (response.data.success) {
+          const historyData = response.data.data[this.selectedCurrency];
+          if (historyData && historyData.length > 0) {
+            // 최근 30일 데이터이므로 가독성을 위해 7일 간격으로 표시
+            const labels = [];
+            const data = [];
+            
+            // 데이터가 시간순으로 정렬되어 있는지 확인하고 필요하면 정렬
+            historyData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 가장 최근 7일 데이터만 사용
+            const recentData = historyData.slice(-7);
+            
+            recentData.forEach(item => {
+              // 날짜를 더 간단한 형식으로 변환 (예: 05-21)
+              const date = new Date(item.date);
+              const formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+              labels.push(formattedDate);
+              data.push(item.price);
+            });
+            
+            // 차트 데이터 업데이트
+            this.currencyChartData = {
+              labels: labels,
+              datasets: [
+                {
+                  label: `${this.selectedCurrency}/KRW`,
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  borderColor: 'rgb(54, 162, 235)',
+                  data: data,
+                  tension: 0.4
+                }
+              ]
+            };
+          }
+        }
+      } catch (error) {
+        console.error('환율 히스토리 데이터 가져오기 실패:', error);
+      }
+    },
+    
+    // 상품 히스토리 데이터 가져오기
+    async fetchCommodityHistoryData() {
+      try {
+        const response = await axios.get('http://127.0.0.1:5000/commodity-history');
+        if (response.data.success) {
+          const historyData = response.data.data[this.selectedCommodity];
+          if (historyData && historyData.length > 0) {
+            const labels = [];
+            const data = [];
+            
+            // 데이터가 시간순으로 정렬되어 있는지 확인하고 필요하면 정렬
+            historyData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 가장 최근 7일 데이터만 사용
+            const recentData = historyData.slice(-7);
+            
+            recentData.forEach(item => {
+              // 날짜를 더 간단한 형식으로 변환 (예: 05-21)
+              const date = new Date(item.date);
+              const formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+              labels.push(formattedDate);
+              data.push(item.price);
+            });
+            
+            // 차트 데이터 업데이트
+            this.commoditiesChartData = {
+              labels: labels,
+              datasets: [
+                {
+                  label: `${this.commodityLabels[this.selectedCommodity]}`,
+                  backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                  borderColor: 'rgb(255, 206, 86)',
+                  data: data,
+                  tension: 0.4
+                }
+              ]
+            };
+          }
+        }
+      } catch (error) {
+        console.error('상품 히스토리 데이터 가져오기 실패:', error);
+      }
+    },
+    
+    // 지수 히스토리 데이터 가져오기
+    async fetchIndexHistoryData() {
+      try {
+        const response = await axios.get('http://127.0.0.1:5000/index-history');
+        if (response.data.success) {
+          const historyData = response.data.data[this.selectedIndex];
+          if (historyData && historyData.length > 0) {
+            const labels = [];
+            const data = [];
+            
+            // 데이터가 시간순으로 정렬되어 있는지 확인하고 필요하면 정렬
+            historyData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 가장 최근 7일 데이터만 사용
+            const recentData = historyData.slice(-7);
+            
+            recentData.forEach(item => {
+              // 날짜를 더 간단한 형식으로 변환 (예: 05-21)
+              const date = new Date(item.date);
+              const formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+              labels.push(formattedDate);
+              data.push(item.price);
+            });
+            
+            // 차트 데이터 업데이트
+            this.indexChartData = {
+              labels: labels,
+              datasets: [
+                {
+                  label: `${this.indexLabels[this.selectedIndex]}`,
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                  borderColor: 'rgb(75, 192, 192)',
+                  data: data,
+                  tension: 0.4
+                }
+              ]
+            };
+          }
+        }
+      } catch (error) {
+        console.error('지수 히스토리 데이터 가져오기 실패:', error);
+      }
     }
-  },
-  async mounted() {
+  },  async mounted() {
     // 페이지 로드 시 실시간 데이터 가져오기
     await this.fetchExchangeRates();
     await this.fetchCommoditiesData();
     
-    // 차트 데이터 설정
-    this.updateCurrencyData();
-    this.updateCommodityData();
-    this.updateIndexData();
+    // 히스토리 데이터 가져오기
+    await this.fetchCurrencyHistoryData();
+    await this.fetchCommodityHistoryData();
+    await this.fetchIndexHistoryData();
     
-    // 30초마다 데이터 업데이트
+    // 30초마다 실시간 데이터 업데이트
     setInterval(async () => {
       await this.fetchExchangeRates();
       await this.fetchCommoditiesData();
     }, 30000);
+    
+    // 5분마다 히스토리 차트 데이터 업데이트
+    setInterval(async () => {
+      await this.fetchCurrencyHistoryData();
+      await this.fetchCommodityHistoryData();
+      await this.fetchIndexHistoryData();
+    }, 300000); // 5분 = 300,000밀리초
   }
 };
 </script>
