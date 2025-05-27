@@ -1,5 +1,4 @@
-<template>  <div class="profile-page">
-    <div class="page-header">
+<template>  <div class="profile-page">    <div class="page-header">
       <div class="container">
         <h1 class="page-title">내 프로필</h1>
       </div>
@@ -42,8 +41,7 @@
             <h2 class="profile-name">{{ user.first_name || user.name || user.username }}</h2>
             <p class="profile-username">@{{ user.username }}</p>
             <p class="profile-email">{{ user.email || '이메일 미등록' }}</p>
-          </div>
-          <div class="profile-stats">
+          </div>          <div class="profile-stats">
             <div class="stat-item">
               <div class="stat-value">{{ getTotalInvestments() | 0 }}만원</div>
               <div class="stat-label">총 투자금액</div>
@@ -52,6 +50,36 @@
               <div class="stat-value">{{ getFavoriteCount() | 0 }}</div>
               <div class="stat-label">관심종목</div>
             </div>
+            <div class="stat-item clickable" @click="showFollowersList = !showFollowersList">
+              <div class="stat-value">{{ followers.length }}</div>
+              <div class="stat-label">팔로워</div>
+            </div>
+            <div class="stat-item clickable" @click="showFollowingsList = !showFollowingsList">
+              <div class="stat-value">{{ followings.length }}</div>
+              <div class="stat-label">팔로잉</div>
+            </div>
+          </div>
+          
+          <!-- 팔로워 목록 -->
+          <div v-if="showFollowersList" class="follow-list">
+            <h4>팔로워 목록</h4>
+            <ul>
+              <li v-for="follower in followers" :key="follower">
+                <router-link :to="`/user/${follower}`">{{ follower }}</router-link>
+              </li>
+              <li v-if="followers.length === 0">아직 팔로워가 없습니다.</li>
+            </ul>
+          </div>
+          
+          <!-- 팔로잉 목록 -->
+          <div v-if="showFollowingsList" class="follow-list">
+            <h4>팔로잉 목록</h4>
+            <ul>
+              <li v-for="following in followings" :key="following">
+                <router-link :to="`/user/${following}`">{{ following }}</router-link>
+              </li>
+              <li v-if="followings.length === 0">아직 팔로우한 사용자가 없습니다.</li>
+            </ul>
           </div>
         </div>
 
@@ -168,6 +196,10 @@ const editForm = ref({})
 const validationErrors = ref({})
 const fileInput = ref(null)
 const profileImage = ref('https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png')  // 기본 프로필 이미지
+const followers = ref([])
+const followings = ref([])
+const showFollowersList = ref(false)
+const showFollowingsList = ref(false)
 
 // 사용자 이니셜(첫 글자) 표시
 const userInitials = computed(() => {
@@ -459,6 +491,28 @@ const logout = () => {
 }
 
 // 페이지 로드 시 프로필 정보 가져오기
+// 팔로워/팔로잉 데이터 로드
+const loadFollowData = () => {
+  try {
+    const username = localStorage.getItem('username')
+    if (!username) return
+
+    // 팔로워 목록 로드
+    const followersKey = `follow_${username}`
+    const storedFollowers = JSON.parse(localStorage.getItem(followersKey) || '[]')
+    followers.value = storedFollowers
+
+    // 팔로잉 목록 로드
+    const followingKey = `followings_${username}`
+    const storedFollowings = JSON.parse(localStorage.getItem(followingKey) || '[]')
+    followings.value = storedFollowings
+
+    console.log('팔로우 데이터 로딩 완료', { followers: followers.value, followings: followings.value })
+  } catch (err) {
+    console.error('팔로우 데이터 로딩 오류:', err)
+  }
+}
+
 onMounted(() => {
   console.log('ProfilePage 컴포넌트 마운트됨')
   
@@ -466,6 +520,7 @@ onMounted(() => {
   if (isAuthenticated()) {
     console.log('인증된 사용자: 프로필 데이터 로딩 시작')
     fetchUserProfile()
+    loadFollowData()
   } else {
     console.log('인증되지 않은 사용자: 로그인 페이지로 리다이렉트')
     error.value = '로그인이 필요합니다. 로그인 페이지로 이동합니다.'
@@ -900,6 +955,60 @@ onMounted(() => {
 
 .option-btn .material-icons {
   color: #007bff;
+}
+
+/* 여기에 팔로우 관련 스타일 추가 */
+.stat-item.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stat-item.clickable:hover {
+  background: linear-gradient(135deg, rgba(0,123,255,0.2), rgba(0,123,255,0.1));
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.follow-list {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.follow-list h4 {
+  margin-top: 0;
+  color: #444;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.follow-list ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.follow-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.follow-list li:last-child {
+  border-bottom: none;
+}
+
+.follow-list a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.follow-list a:hover {
+  text-decoration: underline;
 }
 
 /* 반응형 스타일 */

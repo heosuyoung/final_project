@@ -20,15 +20,13 @@ const routes = [
   { path: '/', component: MainSection },
   { path: '/map', component: MapPage },
   { path: '/login', component: LoginForm },
-  { path: '/signup', component: SignupForm },
-  { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
+  { path: '/signup', component: SignupForm },  { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
   { path: '/commodities', component: CommoditiesPage },
   { path: '/savings', component: SavingsRecommendation },
-  { path: '/stocks', component: StocksPage },
-  { path: '/community/:code', component: StockCommunity },
+  { path: '/stocks', component: StocksPage },  { path: '/community/:code', component: StockCommunity },
   { path: '/community/:code/write', component: WritePost },
   { path: '/community/:code/:postId', component: PostDetail },
-  { path: '/user/:username', component: UserProfile },  // ✅ 하나만 남기기
+  { path: '/user/:username', component: UserProfile },
   { path: '/oauth/callback', component: OAuthCallback },  // 소셜 로그인 콜백 경로 추가
   { path: '/about', component: AboutPage }  // EA$E 소개 페이지 추가
 ]

@@ -1,8 +1,7 @@
 <template>
   <div class="post-detail" v-if="post && post.title">
     <h2>{{ stockName }} - 글 상세</h2>
-    <h3>{{ post.title }}</h3>
-    <p><strong>작성자:</strong> {{ post.author }}</p>
+    <h3>{{ post.title }}</h3>    <p><strong>작성자:</strong> <router-link :to="`/user/${post.author}`" class="author-link">{{ post.author }}</router-link></p>
     <p><strong>날짜:</strong> {{ post.date }}</p>
     <p class="content">{{ post.content }}</p>
 
@@ -102,10 +101,9 @@ const addComment = () => {
       author: username,
       date,
       likedBy: [],
-      dislikedBy: []
-    })
+      dislikedBy: []    })
     newComment.value = ''
-    localStorage.setItem(commentKey, JSON.stringify(comments.value))
+    localStorage.setItem(commentKey.value, JSON.stringify(comments.value))
   }
 }
 
@@ -119,8 +117,7 @@ const toggleLike = (index) => {
   } else {
     c.likedBy.push(username)
     c.dislikedBy = c.dislikedBy.filter(u => u !== username)
-  }
-  localStorage.setItem(commentKey, JSON.stringify(comments.value))
+  }  localStorage.setItem(commentKey.value, JSON.stringify(comments.value))
 }
 
 const toggleDislike = (index) => {
@@ -134,21 +131,21 @@ const toggleDislike = (index) => {
     c.dislikedBy.push(username)
     c.likedBy = c.likedBy.filter(u => u !== username)
   }
-  localStorage.setItem(commentKey, JSON.stringify(comments.value))
+  localStorage.setItem(commentKey.value, JSON.stringify(comments.value))
 }
 
 const deleteComment = (index) => {
   comments.value.splice(index, 1)
-  localStorage.setItem(commentKey, JSON.stringify(comments.value))
+  localStorage.setItem(commentKey.value, JSON.stringify(comments.value))
 }
 
 const deletePost = () => {
   const confirmDelete = confirm('정말로 이 게시글을 삭제하시겠습니까?')
   if (!confirmDelete) return
-  localStorage.removeItem(`post_${stockCode}_${postId.value}`)
+  localStorage.removeItem(`post_${stockCode.value}_${postId.value}`)
   localStorage.removeItem(commentKey.value)
   alert('게시글이 삭제되었습니다.')
-  router.push(`/community/${stockCode}`)
+  router.push(`/community/${stockCode.value}`)
 }
 import { watch } from 'vue'
 
@@ -198,12 +195,12 @@ watch(post, (val) => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   text-align: left;
 }
-.comment-author {
+.comment-author, .author-link {
   color: #0073e9;
   text-decoration: none;
   font-weight: bold;
 }
-.comment-author:hover {
+.comment-author:hover, .author-link:hover {
   text-decoration: underline;
 }
 h2 {
